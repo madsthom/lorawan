@@ -35,6 +35,7 @@
 #include "ns3/node-container.h"
 #include "ns3/log.h"
 #include "ns3/class-a-end-device-lorawan-mac.h"
+#include "ns3/class-c-end-device-lorawan-mac.h"
 
 namespace ns3 {
 namespace lorawan {

@@ -30,6 +30,7 @@
 #include "ns3/lora-frame-header.h"
 #include "ns3/node-container.h"
 #include "ns3/class-a-end-device-lorawan-mac.h"
+#include "ns3/class-c-end-device-lorawan-mac.h"
 #include "ns3/mac-command.h"
 
 namespace ns3 {

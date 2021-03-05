@@ -52,6 +52,8 @@ LorawanMacHelper::SetDeviceType (enum DeviceType dt)
     case ED_A:
       m_mac.SetTypeId ("ns3::ClassAEndDeviceLorawanMac");
       break;
+    case ED_C:
+      m_mac.SetTypeId ("ns3::ClassCEndDeviceLorawanMac");
     }
   m_deviceType = dt;
 }
@@ -76,17 +78,19 @@ LorawanMacHelper::Create (Ptr<Node> node, Ptr<NetDevice> device) const
   Ptr<LorawanMac> mac = m_mac.Create<LorawanMac> ();
   mac->SetDevice (device);
 
+  Ptr<EndDeviceLorawanMac> endDeviceMac = mac->GetObject<EndDeviceLorawanMac> ();
+
   // If we are operating on an end device, add an address to it
-  if (m_deviceType == ED_A && m_addrGen != 0)
+  if ((m_deviceType == ED_A || m_deviceType == ED_C) && m_addrGen != 0)
     {
-      mac->GetObject<ClassAEndDeviceLorawanMac> ()->SetDeviceAddress (m_addrGen->NextAddress ());
+      endDeviceMac->SetDeviceAddress (m_addrGen->NextAddress ());
     }
 
   // Add a basic list of channels based on the region where the device is
   // operating
-  if (m_deviceType == ED_A)
+  if (m_deviceType == ED_A || m_deviceType == ED_C)
     {
-      Ptr<ClassAEndDeviceLorawanMac> edMac = mac->GetObject<ClassAEndDeviceLorawanMac> ();
+      Ptr<EndDeviceLorawanMac> edMac = mac->GetObject<EndDeviceLorawanMac> ();
       switch (m_region)
         {
           case LorawanMacHelper::EU: {
@@ -134,7 +138,7 @@ LorawanMacHelper::Create (Ptr<Node> node, Ptr<NetDevice> device) const
 }
 
 void
-LorawanMacHelper::ConfigureForAlohaRegion (Ptr<ClassAEndDeviceLorawanMac> edMac) const
+LorawanMacHelper::ConfigureForAlohaRegion (Ptr<EndDeviceLorawanMac> edMac) const
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -163,11 +167,21 @@ LorawanMacHelper::ConfigureForAlohaRegion (Ptr<ClassAEndDeviceLorawanMac> edMac)
   /////////////////////
   edMac->SetNPreambleSymbols (8);
 
-  //////////////////////////////////////
-  // Second receive window parameters //
-  //////////////////////////////////////
-  edMac->SetSecondReceiveWindowDataRate (0);
-  edMac->SetSecondReceiveWindowFrequency (869.525);
+  if (m_deviceType == ED_A)
+    {
+      //////////////////////////////////////
+      // Second receive window parameters //
+      //////////////////////////////////////
+      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = edMac->GetObject<ClassAEndDeviceLorawanMac> ();
+      classAEndDevice->SetSecondReceiveWindowDataRate (0);
+      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
+  else if (m_deviceType == ED_C)
+    {
+      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = edMac->GetObject<ClassCEndDeviceLorawanMac> ();
+      classCEndDevice->SetSecondReceiveWindowDataRate (0);
+      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
 }
 
 void
@@ -231,7 +245,7 @@ LorawanMacHelper::ApplyCommonAlohaConfigurations (Ptr<LorawanMac> lorawanMac) co
 }
 
 void
-LorawanMacHelper::ConfigureForEuRegion (Ptr<ClassAEndDeviceLorawanMac> edMac) const
+LorawanMacHelper::ConfigureForEuRegion (Ptr<EndDeviceLorawanMac> edMac) const
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -260,11 +274,21 @@ LorawanMacHelper::ConfigureForEuRegion (Ptr<ClassAEndDeviceLorawanMac> edMac) co
   /////////////////////
   edMac->SetNPreambleSymbols (8);
 
-  //////////////////////////////////////
-  // Second receive window parameters //
-  //////////////////////////////////////
-  edMac->SetSecondReceiveWindowDataRate (0);
-  edMac->SetSecondReceiveWindowFrequency (869.525);
+  if (m_deviceType == ED_A)
+    {
+      //////////////////////////////////////
+      // Second receive window parameters //
+      //////////////////////////////////////
+      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = edMac->GetObject<ClassAEndDeviceLorawanMac> ();
+      classAEndDevice->SetSecondReceiveWindowDataRate (0);
+      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
+  else if (m_deviceType == ED_C)
+    {
+      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = edMac->GetObject<ClassCEndDeviceLorawanMac> ();
+      classCEndDevice->SetSecondReceiveWindowDataRate (0);
+      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
 }
 
 void
@@ -345,7 +369,7 @@ LorawanMacHelper::ApplyCommonEuConfigurations (Ptr<LorawanMac> lorawanMac) const
 ///////////////////////////////
 
 void
-LorawanMacHelper::ConfigureForSingleChannelRegion (Ptr<ClassAEndDeviceLorawanMac> edMac) const
+LorawanMacHelper::ConfigureForSingleChannelRegion (Ptr<EndDeviceLorawanMac> edMac) const
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -374,11 +398,21 @@ LorawanMacHelper::ConfigureForSingleChannelRegion (Ptr<ClassAEndDeviceLorawanMac
   /////////////////////
   edMac->SetNPreambleSymbols (8);
 
-  //////////////////////////////////////
-  // Second receive window parameters //
-  //////////////////////////////////////
-  edMac->SetSecondReceiveWindowDataRate (0);
-  edMac->SetSecondReceiveWindowFrequency (869.525);
+  if (m_deviceType == ED_A)
+    {
+      //////////////////////////////////////
+      // Second receive window parameters //
+      //////////////////////////////////////
+      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = edMac->GetObject<ClassAEndDeviceLorawanMac> ();
+      classAEndDevice->SetSecondReceiveWindowDataRate (0);
+      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
+  else if (m_deviceType == ED_C)
+    {
+      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = edMac->GetObject<ClassCEndDeviceLorawanMac> ();
+      classCEndDevice->SetSecondReceiveWindowDataRate (0);
+      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
 }
 
 void

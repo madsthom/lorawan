@@ -24,6 +24,7 @@
 
 #include "ns3/end-device-status.h"
 #include "ns3/class-a-end-device-lorawan-mac.h"
+#include "ns3/class-c-end-device-lorawan-mac.h"
 #include "ns3/gateway-status.h"
 #include "ns3/lora-device-address.h"
 #include "ns3/network-scheduler.h"
