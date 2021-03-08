@@ -167,6 +167,11 @@ private:
    */
   void ApplyCommonAlohaConfigurations (Ptr<LorawanMac> lorawanMac) const;
 
+  /**
+   * Apply Datarate and Frequency configurations based on End Device type (ED_A, ED_C, etc.)
+   */
+  void ApplyConfigurationBasedOnDeviceType (Ptr<EndDeviceLorawanMac> endDeviceLorawanMac, DeviceType deviceType) const;
+
   ObjectFactory m_mac;
   Ptr<LoraDeviceAddressGenerator> m_addrGen; //!< Pointer to the address generator to use
   enum DeviceType m_deviceType; //!< The kind of device to install
