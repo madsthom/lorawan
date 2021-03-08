@@ -39,11 +39,11 @@ NS_OBJECT_ENSURE_REGISTERED (ClassCEndDeviceLorawanMac);
 TypeId
 ClassCEndDeviceLorawanMac::GetTypeId (void)
 {
-static TypeId tid = TypeId ("ns3::ClassCEndDeviceLorawanMac")
-  .SetParent<EndDeviceLorawanMac> ()
-  .SetGroupName ("lorawan")
-  .AddConstructor<ClassCEndDeviceLorawanMac> ();
-return tid;
+  static TypeId tid = TypeId ("ns3::ClassCEndDeviceLorawanMac")
+    .SetParent<EndDeviceLorawanMac> ()
+    .SetGroupName ("lorawan")
+    .AddConstructor<ClassCEndDeviceLorawanMac> ();
+  return tid;
 }
 
 ClassCEndDeviceLorawanMac::ClassCEndDeviceLorawanMac () :
@@ -304,7 +304,7 @@ ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow (void)
   // Schedule return to sleep after "at least the time required by the end
   // device's radio transceiver to effectively detect a downlink preamble"
   // (LoraWAN specification)
-  m_closeFirstWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols*tSym),
+  m_closeFirstWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
                                             &ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow, this); //m_receiveWindowDuration
 
 }
@@ -323,20 +323,20 @@ ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow (void)
   // We should never be in TX or SLEEP mode at this point
   switch (phy->GetState ())
     {
-    case EndDeviceLoraPhy::TX:
-      NS_ABORT_MSG ("PHY was in TX mode when attempting to " <<
-                    "close a receive window.");
-      break;
-    case EndDeviceLoraPhy::RX:
-      // PHY is receiving: let it finish. The Receive method will switch it back to SLEEP.
-      break;
-    case EndDeviceLoraPhy::SLEEP:
-      // PHY has received, and the MAC's Receive already put the device to sleep
-      break;
-    case EndDeviceLoraPhy::STANDBY:
-      // Turn PHY layer to SLEEP
-      phy->SwitchToSleep ();
-      break;
+      case EndDeviceLoraPhy::TX:
+        NS_ABORT_MSG ("PHY was in TX mode when attempting to " <<
+                      "close a receive window.");
+        break;
+      case EndDeviceLoraPhy::RX:
+        // PHY is receiving: let it finish. The Receive method will switch it back to SLEEP.
+        break;
+      case EndDeviceLoraPhy::SLEEP:
+        // PHY has received, and the MAC's Receive already put the device to sleep
+        break;
+      case EndDeviceLoraPhy::STANDBY:
+        // Turn PHY layer to SLEEP
+        phy->SwitchToSleep ();
+        break;
     }
 }
 
@@ -372,7 +372,7 @@ ClassCEndDeviceLorawanMac::OpenSecondReceiveWindow (void)
   // Schedule return to sleep after "at least the time required by the end
   // device's radio transceiver to effectively detect a downlink preamble"
   // (LoraWAN specification)
-  m_closeSecondWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols*tSym),
+  m_closeSecondWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
                                              &ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow, this);
 
 }
@@ -392,18 +392,18 @@ ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow (void)
   // - STANDBY -> Nothing was detected.
   switch (phy->GetState ())
     {
-    case EndDeviceLoraPhy::TX:
-      break;
-    case EndDeviceLoraPhy::SLEEP:
-      break;
-    case EndDeviceLoraPhy::RX:
-      // PHY is receiving: let it finish
-      NS_LOG_DEBUG ("PHY is receiving: Receive will handle the result.");
-      return;
-    case EndDeviceLoraPhy::STANDBY:
-      // Turn PHY layer to sleep
-      phy->SwitchToSleep ();
-      break;
+      case EndDeviceLoraPhy::TX:
+        break;
+      case EndDeviceLoraPhy::SLEEP:
+        break;
+      case EndDeviceLoraPhy::RX:
+        // PHY is receiving: let it finish
+        NS_LOG_DEBUG ("PHY is receiving: Receive will handle the result.");
+        return;
+      case EndDeviceLoraPhy::STANDBY:
+        // Turn PHY layer to sleep
+        phy->SwitchToSleep ();
+        break;
     }
 
   if (m_retxParams.waitingAck)
@@ -455,19 +455,19 @@ ClassCEndDeviceLorawanMac::GetNextClassTransmissionDelay (Time waitingTime)
   // second receive window (if the second recieve window has not closed yet)
   if (!m_retxParams.waitingAck)
     {
-      if (!m_closeFirstWindow.IsExpired () ||
-          !m_closeSecondWindow.IsExpired () ||
-          !m_secondReceiveWindow.IsExpired () )
+      if (!m_closeFirstWindow.IsExpired ()
+          || !m_closeSecondWindow.IsExpired ()
+          || !m_secondReceiveWindow.IsExpired () )
         {
           NS_LOG_WARN ("Attempting to send when there are receive windows:" <<
                        " Transmission postponed.");
           // Compute the duration of a single symbol for the second receive window DR
           double tSym = pow (2, GetSfFromDataRate (GetSecondReceiveWindowDataRate ())) / GetBandwidthFromDataRate (GetSecondReceiveWindowDataRate ());
           // Compute the closing time of the second receive window
-          Time endSecondRxWindow = Time(m_secondReceiveWindow.GetTs()) + Seconds (m_receiveWindowDurationInSymbols*tSym);
+          Time endSecondRxWindow = Time (m_secondReceiveWindow.GetTs ()) + Seconds (m_receiveWindowDurationInSymbols * tSym);
 
-          NS_LOG_DEBUG("Duration until endSecondRxWindow for new transmission:" << (endSecondRxWindow - Simulator::Now()).GetSeconds());
-          waitingTime = std::max (waitingTime, endSecondRxWindow - Simulator::Now());
+          NS_LOG_DEBUG ("Duration until endSecondRxWindow for new transmission:" << (endSecondRxWindow - Simulator::Now ()).GetSeconds ());
+          waitingTime = std::max (waitingTime, endSecondRxWindow - Simulator::Now ());
         }
     }
   // This is a retransmitted packet, it can not be sent until the end of
@@ -476,10 +476,10 @@ ClassCEndDeviceLorawanMac::GetNextClassTransmissionDelay (Time waitingTime)
     {
       double ack_timeout = m_uniformRV->GetValue (1,3);
       // Compute the duration until ACK_TIMEOUT (It may be a negative number, but it doesn't matter.)
-      Time retransmitWaitingTime = Time(m_secondReceiveWindow.GetTs()) - Simulator::Now() + Seconds (ack_timeout);
+      Time retransmitWaitingTime = Time (m_secondReceiveWindow.GetTs ()) - Simulator::Now () + Seconds (ack_timeout);
 
-      NS_LOG_DEBUG("ack_timeout:" << ack_timeout <<
-                   " retransmitWaitingTime:" << retransmitWaitingTime.GetSeconds());
+      NS_LOG_DEBUG ("ack_timeout:" << ack_timeout <<
+                    " retransmitWaitingTime:" << retransmitWaitingTime.GetSeconds ());
       waitingTime = std::max (waitingTime, retransmitWaitingTime);
     }
 

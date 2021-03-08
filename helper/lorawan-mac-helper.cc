@@ -138,6 +138,26 @@ LorawanMacHelper::Create (Ptr<Node> node, Ptr<NetDevice> device) const
 }
 
 void
+LorawanMacHelper::ApplyConfigurationBasedOnDeviceType (Ptr<EndDeviceLorawanMac> endDeviceLorawanMac, LorawanMacHelper::DeviceType deviceType) const
+{
+  if (m_deviceType == ED_A)
+    {
+      //////////////////////////////////////
+      // Second receive window parameters //
+      //////////////////////////////////////
+      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = endDeviceLorawanMac->GetObject<ClassAEndDeviceLorawanMac> ();
+      classAEndDevice->SetSecondReceiveWindowDataRate (0);
+      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
+  else if (m_deviceType == ED_C)
+    {
+      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = endDeviceLorawanMac->GetObject<ClassCEndDeviceLorawanMac> ();
+      classCEndDevice->SetSecondReceiveWindowDataRate (0);
+      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
+    }
+}
+
+void
 LorawanMacHelper::ConfigureForAlohaRegion (Ptr<EndDeviceLorawanMac> edMac) const
 {
   NS_LOG_FUNCTION_NOARGS ();
@@ -167,21 +187,7 @@ LorawanMacHelper::ConfigureForAlohaRegion (Ptr<EndDeviceLorawanMac> edMac) const
   /////////////////////
   edMac->SetNPreambleSymbols (8);
 
-  if (m_deviceType == ED_A)
-    {
-      //////////////////////////////////////
-      // Second receive window parameters //
-      //////////////////////////////////////
-      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = edMac->GetObject<ClassAEndDeviceLorawanMac> ();
-      classAEndDevice->SetSecondReceiveWindowDataRate (0);
-      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
-    }
-  else if (m_deviceType == ED_C)
-    {
-      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = edMac->GetObject<ClassCEndDeviceLorawanMac> ();
-      classCEndDevice->SetSecondReceiveWindowDataRate (0);
-      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
-    }
+  ApplyConfigurationBasedOnDeviceType(edMac, m_deviceType);
 }
 
 void
@@ -274,21 +280,7 @@ LorawanMacHelper::ConfigureForEuRegion (Ptr<EndDeviceLorawanMac> edMac) const
   /////////////////////
   edMac->SetNPreambleSymbols (8);
 
-  if (m_deviceType == ED_A)
-    {
-      //////////////////////////////////////
-      // Second receive window parameters //
-      //////////////////////////////////////
-      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = edMac->GetObject<ClassAEndDeviceLorawanMac> ();
-      classAEndDevice->SetSecondReceiveWindowDataRate (0);
-      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
-    }
-  else if (m_deviceType == ED_C)
-    {
-      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = edMac->GetObject<ClassCEndDeviceLorawanMac> ();
-      classCEndDevice->SetSecondReceiveWindowDataRate (0);
-      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
-    }
+  ApplyConfigurationBasedOnDeviceType(edMac, m_deviceType);
 }
 
 void
@@ -398,21 +390,7 @@ LorawanMacHelper::ConfigureForSingleChannelRegion (Ptr<EndDeviceLorawanMac> edMa
   /////////////////////
   edMac->SetNPreambleSymbols (8);
 
-  if (m_deviceType == ED_A)
-    {
-      //////////////////////////////////////
-      // Second receive window parameters //
-      //////////////////////////////////////
-      Ptr<ClassAEndDeviceLorawanMac> classAEndDevice = edMac->GetObject<ClassAEndDeviceLorawanMac> ();
-      classAEndDevice->SetSecondReceiveWindowDataRate (0);
-      classAEndDevice->SetSecondReceiveWindowFrequency (869.525);
-    }
-  else if (m_deviceType == ED_C)
-    {
-      Ptr<ClassCEndDeviceLorawanMac> classCEndDevice = edMac->GetObject<ClassCEndDeviceLorawanMac> ();
-      classCEndDevice->SetSecondReceiveWindowDataRate (0);
-      classCEndDevice->SetSecondReceiveWindowFrequency (869.525);
-    }
+  ApplyConfigurationBasedOnDeviceType(edMac, m_deviceType);
 }
 
 void
@@ -499,8 +477,10 @@ LorawanMacHelper::SetSpreadingFactorsUp (NodeContainer endDevices, NodeContainer
       Ptr<NetDevice> netDevice = object->GetDevice (0);
       Ptr<LoraNetDevice> loraNetDevice = netDevice->GetObject<LoraNetDevice> ();
       NS_ASSERT (loraNetDevice != 0);
-      Ptr<ClassAEndDeviceLorawanMac> mac =
-          loraNetDevice->GetMac ()->GetObject<ClassAEndDeviceLorawanMac> ();
+
+      Ptr<EndDeviceLorawanMac> mac =
+          loraNetDevice->GetMac ()->GetObject<EndDeviceLorawanMac> ();
+      NS_LOG_INFO(mac);     
       NS_ASSERT (mac != 0);
 
       // Try computing the distance from each gateway and find the best one
