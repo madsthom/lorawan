@@ -90,6 +90,11 @@ public:
   void OpenSecondReceiveWindow (void);
 
   /**
+   * Perform operations needed to open the class c receive window.
+   */
+  void OpenClassCReceiveWindow (void);
+
+  /**
    * Perform operations needed to close the first receive window.
    */
   void CloseFirstReceiveWindow (void);
@@ -98,6 +103,12 @@ public:
    * Perform operations needed to close the second receive window.
    */
   void CloseSecondReceiveWindow (void);
+
+  /**
+   * Perform operations needed to close the class c window.
+   */
+  void CloseClassCReceiveWindow (void);
+
 
   /////////////////////////
   // Getters and Setters //
@@ -147,6 +158,20 @@ public:
    */
   double GetSecondReceiveWindowFrequency (void);
 
+  /**
+   * Set the Class C response timeout.
+   *
+   * \param classCRespTimeout the Class C response timeout.
+   */
+  void SetClassCRespTimeout (Time classCRespTimeout);
+
+  /**
+   * Get the Class C response timeout.
+   * 
+   * @return The Class C response timeout.
+   */
+  Time GetClassCRespTimeout (void);
+
   /////////////////////////
   // MAC command methods //
   /////////////////////////
@@ -191,6 +216,13 @@ private:
   EventId m_closeSecondWindow;
 
   /**
+   * The event of the closing the class c receive window.
+   *
+   * This Event will be canceled on the next transmission.
+   */
+  EventId m_closeClassCWindow;
+
+  /**
    * The event of the second receive window opening.
    *
    * This Event is used to cancel the second window in case the first one is
@@ -198,6 +230,12 @@ private:
    */
   EventId m_secondReceiveWindow;
 
+  /**
+   * The event of the class c receive window opening.
+   *
+   * ??
+   */
+  EventId m_classCReceiveWindow;
   /**
    * The frequency to listen on for the second receive window.
    */
@@ -212,6 +250,11 @@ private:
    * The RX1DROffset parameter value
    */
   uint8_t m_rx1DrOffset;
+
+  /**
+   * The CLASS_C_RESP_TIMEOUT Class C parameter. The default value is 8s.
+   */
+  Time m_classCRespTimeout;
 
 }; /* ClassCEndDeviceLorawanMac */
 } /* namespace lorawan */

@@ -442,6 +442,18 @@ ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow (void)
     }
 }
 
+void
+ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow (void)
+{
+  // TODO: Opening of RXC
+}
+
+void
+ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow (void)
+{
+  // TODO: Closing of RXC
+}
+
 /////////////////////////
 // Getters and Setters //
 /////////////////////////
@@ -514,6 +526,18 @@ double
 ClassCEndDeviceLorawanMac::GetSecondReceiveWindowFrequency (void)
 {
   return m_secondReceiveWindowFrequency;
+}
+
+void
+ClassCEndDeviceLorawanMac::SetClassCRespTimeout (Time classCRespTimeout)
+{
+  m_classCRespTimeout = classCRespTimeout;
+}
+
+Time
+ClassCEndDeviceLorawanMac::GetClassCRespTimeout (void)
+{
+  return m_classCRespTimeout;
 }
 
 /////////////////////////
