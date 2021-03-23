@@ -221,7 +221,10 @@ LoraHelper::DoPrintDeviceStatus (NodeContainer endDevices, NodeContainer gateway
       Ptr<NetDevice> netDevice = object->GetDevice (0);
       Ptr<LoraNetDevice> loraNetDevice = netDevice->GetObject<LoraNetDevice> ();
       NS_ASSERT (loraNetDevice != 0);
-      Ptr<ClassAEndDeviceLorawanMac> mac = loraNetDevice->GetMac ()->GetObject<ClassAEndDeviceLorawanMac> ();
+
+      // TODO: Print Class Specific to outputFile
+      Ptr<EndDeviceLorawanMac> mac = loraNetDevice->GetMac ()->GetObject<EndDeviceLorawanMac> ();
+      NS_ASSERT(mac != 0);
       int dr = int(mac->GetDataRate ());
       double txPower = mac->GetTransmissionPower ();
       Vector pos = position->GetPosition ();
