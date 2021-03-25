@@ -638,8 +638,8 @@ LorawanMacHelper::SetSpreadingFactorsGivenDistribution (NodeContainer endDevices
       Ptr<NetDevice> netDevice = object->GetDevice (0);
       Ptr<LoraNetDevice> loraNetDevice = netDevice->GetObject<LoraNetDevice> ();
       NS_ASSERT (loraNetDevice != 0);
-      Ptr<ClassAEndDeviceLorawanMac> mac =
-          loraNetDevice->GetMac ()->GetObject<ClassAEndDeviceLorawanMac> ();
+      Ptr<EndDeviceLorawanMac> mac =
+          loraNetDevice->GetMac ()->GetObject<EndDeviceLorawanMac> ();
       NS_ASSERT (mac != 0);
 
       double prob = uniformRV->GetValue (0, 1);
