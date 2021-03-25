@@ -54,7 +54,7 @@ public:
   /**
    * Add a device to the ones that are tracked by this NetworkStatus object.
    */
-  void AddNode (Ptr<ClassAEndDeviceLorawanMac> edMac);
+  void AddNode (Ptr<EndDeviceLorawanMac> edMac);
 
   /**
    * Add this gateway to the list of gateways connected to the network.
@@ -99,6 +99,10 @@ public:
    * Get the reply for the specified device address.
    */
   Ptr<Packet> GetReplyForDevice (LoraDeviceAddress edAddress, int windowNumber);
+
+  void SetDRAndFreqForSecondWindowOnTag(LoraTag &tag, Ptr<EndDeviceStatus> endDeviceStatus);
+
+  void SetDRAndFreqForFirstWindowOnTag(LoraTag &tag, Ptr<EndDeviceStatus> endDeviceStatus);
 
   /**
    * Get the EndDeviceStatus for the device that sent a packet.
