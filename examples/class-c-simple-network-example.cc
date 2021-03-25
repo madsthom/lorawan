@@ -15,6 +15,7 @@
 #include "ns3/node-container.h"
 #include "ns3/position-allocator.h"
 #include "ns3/one-shot-sender-helper.h"
+#include "ns3/periodic-sender-helper.h"
 #include "ns3/command-line.h"
 #include <algorithm>
 #include <ctime>
@@ -121,6 +122,7 @@ int main (int argc, char *argv[])
   phyHelper.SetDeviceType (LoraPhyHelper::GW);
   macHelper.SetDeviceType (LorawanMacHelper::GW);
   helper.Install (phyHelper, macHelper, gateways);
+  NS_LOG_INFO("Done creating/installing gateways");
 
   /*********************************************
   *  Install applications on the end devices  *
@@ -129,7 +131,7 @@ int main (int argc, char *argv[])
   OneShotSenderHelper oneShotSenderHelper;
   oneShotSenderHelper.SetSendTime (Seconds (2));
 
-  oneShotSenderHelper.Install (endDevices);
+  oneShotSenderHelper.Install (gateways);
 
   /******************
    * Set Data Rates *
