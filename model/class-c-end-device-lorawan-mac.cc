@@ -64,7 +64,7 @@ ClassCEndDeviceLorawanMac::ClassCEndDeviceLorawanMac () :
   m_secondReceiveWindow.Cancel ();
   m_classCReceiveWindow = EventId ();
   m_classCReceiveWindow.Cancel ();
-  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
+  //m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
 }
 
 ClassCEndDeviceLorawanMac::~ClassCEndDeviceLorawanMac ()
@@ -297,6 +297,8 @@ ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
 
+  m_closeClassCWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
+
   // Set Phy in Standby mode
   m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToStandby ();
 
@@ -308,9 +310,6 @@ ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow (void)
   // (LoraWAN specification)
   m_closeFirstWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
                                             &ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow, this); //m_receiveWindowDuration
-  m_classCReceiveWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
-                                            &ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
-
 }
 
 void
@@ -342,12 +341,16 @@ ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow (void)
         phy->SwitchToSleep ();
         break;
     }
+
+    m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
 }
 
 void
 ClassCEndDeviceLorawanMac::OpenSecondReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+
+  m_closeClassCWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
 
   // Check for receiver status: if it's locked on a packet, don't open this
   // window at all.
@@ -444,6 +447,8 @@ ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow (void)
       // Reset retransmission parameters
       resetRetransmissionParameters ();
     }
+
+  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
 }
 
 void
@@ -485,7 +490,64 @@ ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow (void)
 void
 ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow (void)
 {
-  // TODO: Closing of RXC
+  Ptr<EndDeviceLoraPhy> phy = m_phy->GetObject<EndDeviceLoraPhy> ();
+
+  // NS_ASSERT (phy->m_state != EndDeviceLoraPhy::TX &&
+  // phy->m_state != EndDeviceLoraPhy::SLEEP);
+
+  // Check the Phy layer's state:
+  // - RX -> We have received a preamble.
+  // - STANDBY -> Nothing was detected.
+  switch (phy->GetState ())
+    {
+      case EndDeviceLoraPhy::TX:
+        break;
+      case EndDeviceLoraPhy::SLEEP:
+        break;
+      case EndDeviceLoraPhy::RX:
+        // PHY is receiving: let it finish
+        NS_LOG_DEBUG ("PHY is receiving: Receive will handle the result.");
+        return;
+      case EndDeviceLoraPhy::STANDBY:
+        // Turn PHY layer to sleep
+        phy->SwitchToSleep ();
+        break;
+    }
+
+  if (m_retxParams.waitingAck)
+    {
+      NS_LOG_DEBUG ("No reception initiated by PHY: rescheduling transmission.");
+      if (m_retxParams.retxLeft > 0 )
+        {
+          NS_LOG_INFO ("We have " << unsigned(m_retxParams.retxLeft) << " retransmissions left: rescheduling transmission.");
+          this->Send (m_retxParams.packet);
+        }
+
+      else if (m_retxParams.retxLeft == 0 && m_phy->GetObject<EndDeviceLoraPhy> ()->GetState () != EndDeviceLoraPhy::RX)
+        {
+          uint8_t txs = m_maxNumbTx - (m_retxParams.retxLeft);
+          m_requiredTxCallback (txs, false, m_retxParams.firstAttempt, m_retxParams.packet);
+          NS_LOG_DEBUG ("Failure: no more retransmissions left. Used " << unsigned(txs) << " transmissions.");
+
+          // Reset retransmission parameters
+          resetRetransmissionParameters ();
+        }
+
+      else
+        {
+          NS_ABORT_MSG ("The number of retransmissions left is negative ! ");
+        }
+    }
+  else
+    {
+      uint8_t txs = m_maxNumbTx - (m_retxParams.retxLeft );
+      m_requiredTxCallback (txs, true, m_retxParams.firstAttempt, m_retxParams.packet);
+      NS_LOG_INFO ("We have " << unsigned(m_retxParams.retxLeft) <<
+                   " transmissions left. We were not transmitting confirmed messages.");
+
+      // Reset retransmission parameters
+      resetRetransmissionParameters ();
+    }
 }
 
 /////////////////////////
