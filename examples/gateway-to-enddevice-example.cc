@@ -41,22 +41,23 @@ int main (int argc, char *argv[])
   // Logging
   //////////
 
-  LogComponentEnable ("GatewayToEnddeviceExample", LOG_LEVEL_ALL);
-  LogComponentEnable ("NetworkServer", LOG_LEVEL_ALL);
-  LogComponentEnable ("NetworkStatus", LOG_LEVEL_ALL);
+  // LogComponentEnable ("GatewayToEnddeviceExample", LOG_LEVEL_ALL);
+  // LogComponentEnable ("NetworkServer", LOG_LEVEL_ALL);
+  // LogComponentEnable ("NetworkStatus", LOG_LEVEL_ALL);
   LogComponentEnable ("GatewayLorawanMac", LOG_LEVEL_ALL);
-  LogComponentEnable("LoraFrameHeader", LOG_LEVEL_ALL);
-  LogComponentEnable("LorawanMacHeader", LOG_LEVEL_ALL);
-  LogComponentEnable("MacCommand", LOG_LEVEL_ALL);
-  LogComponentEnable("GatewayLoraPhy", LOG_LEVEL_ALL);
-  LogComponentEnable("LoraPhy", LOG_LEVEL_ALL);
-  LogComponentEnable("LoraChannel", LOG_LEVEL_ALL);
-  LogComponentEnable("EndDeviceLoraPhy", LOG_LEVEL_ALL);
-  LogComponentEnable("LogicalLoraChannelHelper", LOG_LEVEL_ALL);
+  // LogComponentEnable("LoraFrameHeader", LOG_LEVEL_ALL);
+  // LogComponentEnable("LorawanMacHeader", LOG_LEVEL_ALL);
+  // LogComponentEnable("MacCommand", LOG_LEVEL_ALL);
+  // LogComponentEnable("GatewayLoraPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable("LoraPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable("LoraChannel", LOG_LEVEL_ALL);
+  // LogComponentEnable("EndDeviceLoraPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable("LogicalLoraChannelHelper", LOG_LEVEL_ALL);
   LogComponentEnable ("EndDeviceLorawanMac", LOG_LEVEL_ALL);
+  LogComponentEnable ("LorawanMacHelper", LOG_LEVEL_ALL);
   LogComponentEnable ("ClassCEndDeviceLorawanMac", LOG_LEVEL_ALL);
   LogComponentEnable ("FuotaSender", LOG_LEVEL_ALL);
-  LogComponentEnable("PointToPointNetDevice", LOG_LEVEL_ALL);
+  // LogComponentEnable("PointToPointNetDevice", LOG_LEVEL_ALL);
   LogComponentEnable ("Forwarder", LOG_LEVEL_ALL);
   LogComponentEnable ("FuotaSenderHelper", LOG_LEVEL_ALL);
   // LogComponentEnable ("DeviceStatus", LOG_LEVEL_ALL);
@@ -124,13 +125,18 @@ int main (int argc, char *argv[])
   // Set message type (Default is unconfirmed)
   Ptr<LorawanMac> edMac1 = endDevices.Get (0)->GetDevice (0)->GetObject<LoraNetDevice> ()->GetMac ();
   Ptr<ClassCEndDeviceLorawanMac> edLorawanMac1 = edMac1->GetObject<ClassCEndDeviceLorawanMac> ();
-  edLorawanMac1->SetMType (LorawanMacHeader::UNCONFIRMED_DATA_UP);
 
+  for (NodeContainer::Iterator j = endDevices.Begin (); j != endDevices.End (); ++j)
+    {
+      Ptr<Node> node = *j;
+      Ptr<LoraNetDevice> loraNetDevice = node->GetDevice (0)->GetObject<LoraNetDevice> ();
+      Ptr<LoraPhy> phy = loraNetDevice->GetPhy ();
+    }
 
   // Install applications in EDs
 
   OneShotSenderHelper oneShotHelper = OneShotSenderHelper ();
-  oneShotHelper.SetSendTime (Seconds (4));
+  oneShotHelper.SetSendTime (Seconds (1));
   oneShotHelper.Install (endDevices.Get (0));
   // oneShotHelper.SetSendTime (Seconds (10));
   // oneShotHelper.Install (endDevices.Get (1));
@@ -169,15 +175,16 @@ int main (int argc, char *argv[])
   networkServerHelper.Install (networkServers);
 
   FuotaSenderHelper fuotaSenderHelper = FuotaSenderHelper ();
-  fuotaSenderHelper.SetSendTime (Seconds (6));
+  fuotaSenderHelper.SetSendTime (Seconds (10));
+  fuotaSenderHelper.SetDeviceIdAndAddress (nwkId, nwkAddr);
   fuotaSenderHelper.Install (gateways.Get (0));
 
   // Install the Forwarder application on the gateways
-  ForwarderHelper forwarderHelper;
-  forwarderHelper.Install (gateways);
+  // ForwarderHelper forwarderHelper;
+  // forwarderHelper.Install (gateways);
 
   // Start simulation
-  Simulator::Stop (Seconds (800));
+  Simulator::Stop (Seconds (80));
   Simulator::Run ();
   Simulator::Destroy ();
 

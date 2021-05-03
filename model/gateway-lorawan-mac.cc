@@ -58,16 +58,18 @@ GatewayLorawanMac::Send (Ptr<Packet> packet)
 
   // Get DataRate to send this packet with
   LoraTag tag;
-  bool response_packet = packet->RemovePacketTag (tag);
+  packet->RemovePacketTag (tag);
   uint8_t dataRate = tag.GetDataRate ();
   double frequency = tag.GetFrequency ();
 
-  if (!response_packet) {
-//    Ptr<LogicalLoraChannel> txChannel = GetChannelForTx ();
-//    frequency = txChannel->GetFrequency ();
-	frequency = 869.525;
-	dataRate = 5;
-  }
+//   if (!response_packet) {
+// //    Ptr<LogicalLoraChannel> txChannel = GetChannelForTx ();
+// //    frequency = txChannel->GetFrequency ();
+//     frequency = 869.525;
+//     dataRate = 0;
+//   }
+
+//   dataRate = 0;
 
   NS_LOG_DEBUG ("DR: " << unsigned (dataRate));
   NS_LOG_DEBUG ("SF: " << unsigned (GetSfFromDataRate (dataRate)));

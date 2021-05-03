@@ -53,6 +53,12 @@ FuotaSenderHelper::SetAttribute (std::string name,
   m_factory.Set (name, value);
 }
 
+void FuotaSenderHelper::SetDeviceIdAndAddress(uint8_t nwkId, uint32_t nwkAddr)
+{
+  m_nwkId = nwkId;
+  m_nwkAddr = nwkAddr;
+}
+
 ApplicationContainer
 FuotaSenderHelper::Install (Ptr<Node> node) const
 {
@@ -79,6 +85,7 @@ FuotaSenderHelper::InstallPriv (Ptr<Node> node) const
   Ptr<FuotaSender> app = m_factory.Create<FuotaSender> ();
 
   app->SetSendTime (m_sendTime);
+  app->SetDeviceIdAndAddress(m_nwkId, m_nwkAddr);
 
   app->SetNode (node);
   node->AddApplication (app);
