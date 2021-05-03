@@ -64,7 +64,7 @@ ClassCEndDeviceLorawanMac::ClassCEndDeviceLorawanMac () :
   m_secondReceiveWindow.Cancel ();
   m_classCReceiveWindow = EventId ();
   m_classCReceiveWindow.Cancel ();
-  //m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
+  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow, this);
 }
 
 ClassCEndDeviceLorawanMac::~ClassCEndDeviceLorawanMac ()
@@ -245,6 +245,7 @@ void
 ClassCEndDeviceLorawanMac::FailedReception (Ptr<Packet const> packet)
 {
   NS_LOG_FUNCTION (this << packet);
+  NS_LOG_INFO ("FailedReception");
 
   // Switch to sleep after a failed reception
   m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToSleep ();
@@ -272,6 +273,7 @@ void
 ClassCEndDeviceLorawanMac::TxFinished (Ptr<const Packet> packet)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("TX FINISHED");
 
   // Schedule the opening of the first receive window
   Simulator::Schedule (m_receiveDelay1,
@@ -296,6 +298,7 @@ void
 ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("Open 1st Receive Window");
 
   m_closeClassCWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
 
@@ -316,6 +319,9 @@ void
 ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("Closing 1st Receive Window");
+
+  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
 
   Ptr<EndDeviceLoraPhy> phy = m_phy->GetObject<EndDeviceLoraPhy> ();
 
@@ -341,15 +347,13 @@ ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow (void)
         phy->SwitchToSleep ();
         break;
     }
-
-    m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
 }
 
 void
 ClassCEndDeviceLorawanMac::OpenSecondReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
-
+  NS_LOG_INFO("Opening 2 Receive Window");
   m_closeClassCWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
 
   // Check for receiver status: if it's locked on a packet, don't open this
@@ -388,6 +392,7 @@ void
 ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("Closing 2 Receive Window");
 
   Ptr<EndDeviceLoraPhy> phy = m_phy->GetObject<EndDeviceLoraPhy> ();
 
@@ -478,13 +483,13 @@ ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow (void)
                                                                (m_secondReceiveWindowDataRate));
 
   //Calculate the duration of a single symbol for the second receive window DR
-  // double tSym = pow (2, GetSfFromDataRate (GetSecondReceiveWindowDataRate ())) / GetBandwidthFromDataRate ( GetSecondReceiveWindowDataRate ());
+  //double tSym = pow (2, GetSfFromDataRate (GetSecondReceiveWindowDataRate ())) / GetBandwidthFromDataRate ( GetSecondReceiveWindowDataRate ());
 
   // Schedule return to sleep after "at least the time required by the end
   // device's radio transceiver to effectively detect a downlink preamble"
   // (LoraWAN specification)
   // m_closeSecondWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
-  //                                            &ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow, this);
+  //                                            &ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
 }
 
 void

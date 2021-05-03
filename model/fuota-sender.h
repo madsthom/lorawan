@@ -48,6 +48,8 @@ public:
    */
   void SetSendTime (Time sendTime);
 
+  void SetDeviceIdAndAddress (uint8_t nwkId, uint32_t nwkAddr);
+
   /**
    * Start the application by scheduling the first SendPacket event.
    */
@@ -63,6 +65,10 @@ private:
    * The time at which to send the packet.
    */
   Time m_sendTime;
+
+  uint8_t m_nwkId;
+
+  uint32_t m_nwkAddr;
 
   /**
    * The sending event.

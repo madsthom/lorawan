@@ -26,6 +26,7 @@
 #include "ns3/double.h"
 #include "ns3/string.h"
 #include "ns3/lora-net-device.h"
+#include "ns3/lora-tag.h"
 
 namespace ns3 {
 namespace lorawan {
@@ -68,6 +69,12 @@ FuotaSender::SetSendTime (Time sendTime)
   m_sendTime = sendTime;
 }
 
+void FuotaSender::SetDeviceIdAndAddress(uint8_t nwkId, uint32_t nwkAddr)
+{
+  m_nwkId = nwkId;
+  m_nwkAddr = nwkAddr;
+}
+
 void
 FuotaSender::SendPacket (void)
 {
@@ -79,21 +86,30 @@ FuotaSender::SendPacket (void)
   LoraFrameHeader frameHdr;
   frameHdr.SetAsDownlink ();
   frameHdr.SetAck (false);
-  frameHdr.SetAdr (false);
+  frameHdr.SetAdr (true);
   frameHdr.SetFCnt (1);
-  frameHdr.SetFPort(7);
-  frameHdr.SetFPending(1);
-  uint8_t nwkId = 54;
-  uint32_t nwkAddr = 1864;
-  frameHdr.SetAddress (LoraDeviceAddress (nwkId, nwkAddr));
+  frameHdr.SetFPort(15);
+  frameHdr.SetFPending(0);
+
+  frameHdr.SetAddress (LoraDeviceAddress (m_nwkId, m_nwkAddr));
   packet->AddHeader(frameHdr);
 
   LorawanMacHeader macHdr;
   macHdr.SetMType(LorawanMacHeader::UNCONFIRMED_DATA_DOWN);
   packet->AddHeader(macHdr);
 
+  // Tag the packet with information about frequency and datarate
+  LoraTag tag;
+  packet->RemovePacketTag (tag);
+  tag.SetDataRate (0);
+  tag.SetFrequency (869.525);
+  packet->AddPacketTag (tag);
+
   
   m_mac->Send (packet);
+
+  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(2), &FuotaSender::SendPacket,
+                                     this);
 }
 
 void
