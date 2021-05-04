@@ -25,6 +25,7 @@
 #include "ns3/nstime.h"
 #include "ns3/lorawan-mac.h"
 #include "ns3/attribute.h"
+#include "ns3/lora-frame-header.h"
 
 namespace ns3 {
 namespace lorawan {
@@ -43,12 +44,16 @@ public:
    */
   void SendPacket (void);
 
+  void SendPacketOnFPort (uint8_t fport);
+
   /**
    * Set the time at which this app will send a packet.
    */
   void SetSendTime (Time sendTime);
 
   void SetDeviceIdAndAddress (uint8_t nwkId, uint32_t nwkAddr);
+
+  LoraFrameHeader SetFrameHeaderWithFPort (uint8_t fport);
 
   /**
    * Start the application by scheduling the first SendPacket event.
@@ -79,6 +84,7 @@ private:
    * The MAC layer of this node.
    */
   Ptr<LorawanMac> m_mac;
+  uint8_t m_message_count;
 };
 
 } //namespace ns3
