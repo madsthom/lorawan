@@ -77,6 +77,8 @@ GatewayLorawanMac::Send (Ptr<Packet> packet)
   NS_LOG_DEBUG ("Freq: " << frequency << " MHz");
   packet->AddPacketTag (tag);
 
+  NS_LOG_DEBUG("Waiting time: " << m_channelHelper.GetWaitingTime(CreateObject<LogicalLoraChannel> (frequency)));
+
   // Make sure we can transmit this packet
   if (m_channelHelper.GetWaitingTime(CreateObject<LogicalLoraChannel> (frequency)) > Time(0))
     {
