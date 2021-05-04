@@ -53,15 +53,15 @@ int main (int argc, char *argv[])
   // LogComponentEnable("LoraChannel", LOG_LEVEL_ALL);
   // LogComponentEnable("EndDeviceLoraPhy", LOG_LEVEL_ALL);
   // LogComponentEnable("LogicalLoraChannelHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("EndDeviceLorawanMac", LOG_LEVEL_ALL);
-  LogComponentEnable ("LorawanMacHelper", LOG_LEVEL_ALL);
+  // LogComponentEnable ("EndDeviceLorawanMac", LOG_LEVEL_ALL);
+  // LogComponentEnable ("LorawanMacHelper", LOG_LEVEL_ALL);
   LogComponentEnable ("ClassCEndDeviceLorawanMac", LOG_LEVEL_ALL);
   LogComponentEnable ("FuotaSender", LOG_LEVEL_ALL);
   // LogComponentEnable("PointToPointNetDevice", LOG_LEVEL_ALL);
-  LogComponentEnable ("Forwarder", LOG_LEVEL_ALL);
+  // LogComponentEnable ("Forwarder", LOG_LEVEL_ALL);
   LogComponentEnable ("FuotaSenderHelper", LOG_LEVEL_ALL);
   // LogComponentEnable ("DeviceStatus", LOG_LEVEL_ALL);
-  LogComponentEnable ("GatewayStatus", LOG_LEVEL_ALL);
+  // LogComponentEnable ("GatewayStatus", LOG_LEVEL_ALL);
   LogComponentEnableAll (LOG_PREFIX_FUNC);
   LogComponentEnableAll (LOG_PREFIX_NODE);
   LogComponentEnableAll (LOG_PREFIX_TIME);
@@ -83,13 +83,13 @@ int main (int argc, char *argv[])
   // End Device mobility
   MobilityHelper mobilityEd, mobilityGw;
   Ptr<ListPositionAllocator> positionAllocEd = CreateObject<ListPositionAllocator> ();
-  positionAllocEd->Add (Vector (0.0, 10.0, 0.0));
+  positionAllocEd->Add (Vector (1000.0, 1000.0, 100.0));
   mobilityEd.SetPositionAllocator (positionAllocEd);
   mobilityEd.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
   // Gateway mobility
   Ptr<ListPositionAllocator> positionAllocGw = CreateObject<ListPositionAllocator> ();
-  positionAllocGw->Add (Vector (0.0, 0.0, 0.0));
+  positionAllocGw->Add (Vector (10.0, 10.0, 10.0));
   mobilityGw.SetPositionAllocator (positionAllocGw);
   mobilityGw.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
@@ -184,7 +184,7 @@ int main (int argc, char *argv[])
   // forwarderHelper.Install (gateways);
 
   // Start simulation
-  Simulator::Stop (Seconds (80));
+  Simulator::Stop (Seconds (800));
   Simulator::Run ();
   Simulator::Destroy ();
 
