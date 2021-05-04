@@ -188,6 +188,8 @@ ClassCEndDeviceLorawanMac::Receive (Ptr<Packet const> packet)
           // Parse the MAC commands
           ParseCommands (fHdr);
 
+          ParsePortSpecificCommands(fHdr);
+
           // TODO Pass the packet up to the NetDevice
 
 
@@ -717,6 +719,22 @@ ClassCEndDeviceLorawanMac::OnRxClassParamSetupReq (Ptr<RxParamSetupReq> rxParamS
   m_macCommandList.push_back (CreateObject<RxParamSetupAns> (offsetOk,
                                                              dataRateOk, true));
 
+}
+
+void
+ClassCEndDeviceLorawanMac::ParsePortSpecificCommands (LoraFrameHeader frameheader)
+{
+  uint8_t fport = frameheader.GetFPort();
+  NS_LOG_INFO("FPORT for message: " << unsigned(fport));
+
+  if (fport == 205)
+    {
+      m_is_class_c = true;
+    }
+  else
+   {
+     m_is_class_c = false;
+   }
 }
 
 } /* namespace lorawan */
