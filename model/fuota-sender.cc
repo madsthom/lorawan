@@ -150,11 +150,11 @@ FuotaSender::StartApplication (void)
                                      this, 205);
   for (int i = 0; i < 10; i++)
     {
-      m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(10 * i), &FuotaSender::SendPacketOnFPort,
+      m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(14 * i), &FuotaSender::SendPacketOnFPort,
                                       this, 200);
     }
   
-  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(100), &FuotaSender::SendPacketOnFPort,
+  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(140), &FuotaSender::SendPacketOnFPort,
                                      this, 206);
 }
 
