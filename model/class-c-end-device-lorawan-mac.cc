@@ -729,10 +729,12 @@ ClassCEndDeviceLorawanMac::ParsePortSpecificCommands (LoraFrameHeader frameheade
 
   if (fport == 205)
     {
+      NS_LOG_INFO("Switched to Class C");
       m_is_class_c = true;
     }
-  else
+  else if (fport == 206)
    {
+     NS_LOG_INFO("Switched back to Class A");
      m_is_class_c = false;
    }
 }
