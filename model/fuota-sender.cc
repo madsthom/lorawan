@@ -75,23 +75,34 @@ void FuotaSender::SetDeviceIdAndAddress(uint8_t nwkId, uint32_t nwkAddr)
   m_nwkAddr = nwkAddr;
 }
 
+LoraFrameHeader
+FuotaSender::SetFrameHeaderWithFPort(uint8_t fport)
+{
+  m_message_count++;
+
+  LoraFrameHeader frameHdr;
+  frameHdr.SetAsDownlink ();
+  frameHdr.SetAck (false);
+  frameHdr.SetAdr (true);
+  frameHdr.SetFCnt (m_message_count);
+  frameHdr.SetFPort(fport);
+  frameHdr.SetFPending(0);
+
+  frameHdr.SetAddress (LoraDeviceAddress (m_nwkId, m_nwkAddr));
+
+  return frameHdr;
+}
+
 void
-FuotaSender::SendPacket (void)
+FuotaSender::SendPacketOnFPort (uint8_t fport)
 {
   NS_LOG_FUNCTION (this);
 
   // Create and send a new packet
   Ptr<Packet> packet = Create<Packet> (10);
 
-  LoraFrameHeader frameHdr;
-  frameHdr.SetAsDownlink ();
-  frameHdr.SetAck (false);
-  frameHdr.SetAdr (true);
-  frameHdr.SetFCnt (1);
-  frameHdr.SetFPort(15);
-  frameHdr.SetFPending(0);
+  LoraFrameHeader frameHdr = SetFrameHeaderWithFPort (fport);
 
-  frameHdr.SetAddress (LoraDeviceAddress (m_nwkId, m_nwkAddr));
   packet->AddHeader(frameHdr);
 
   LorawanMacHeader macHdr;
@@ -107,15 +118,20 @@ FuotaSender::SendPacket (void)
 
   
   m_mac->Send (packet);
+}
 
-  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(2), &FuotaSender::SendPacket,
-                                     this);
+void
+FuotaSender::SendPacket (void)
+{
+  NS_LOG_FUNCTION (this);
+  SendPacketOnFPort(200); 
 }
 
 void
 FuotaSender::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
+  m_message_count = 0;
 
   // Make sure we have a MAC layer
   if (m_mac == 0)
@@ -128,10 +144,18 @@ FuotaSender::StartApplication (void)
       NS_ASSERT (m_mac != 0);
     }
 
-  // Schedule the next SendPacket event
+  // Schedule the next couple of SendPacket event
   Simulator::Cancel (m_sendEvent);
-  m_sendEvent = Simulator::Schedule (m_sendTime, &FuotaSender::SendPacket,
-                                     this);
+  m_sendEvent = Simulator::Schedule (m_sendTime, &FuotaSender::SendPacketOnFPort,
+                                     this, 205);
+  for (int i = 0; i < 10; i++)
+    {
+      m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(10 * i), &FuotaSender::SendPacketOnFPort,
+                                      this, 200);
+    }
+  
+  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(100), &FuotaSender::SendPacketOnFPort,
+                                     this, 206);
 }
 
 void
