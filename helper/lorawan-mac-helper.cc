@@ -134,6 +134,16 @@ LorawanMacHelper::Create (Ptr<Node> node, Ptr<NetDevice> device) const
           }
         }
     }
+  NS_LOG_INFO("Device type: " << m_deviceType);
+  // fixme: This is not a good solution
+  if (m_deviceType == ED_C)
+    {
+      mac->GetObject<EndDeviceLorawanMac>()->m_is_class_c = true;
+    }
+  else if (m_deviceType == ED_A)
+    {
+      mac->GetObject<EndDeviceLorawanMac>()->m_is_class_c = false;
+    }
   return mac;
 }
 
