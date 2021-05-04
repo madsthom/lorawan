@@ -17,6 +17,8 @@
 #include "ns3/one-shot-sender-helper.h"
 #include "ns3/periodic-sender-helper.h"
 #include "ns3/command-line.h"
+#include "ns3/network-server-helper.h"
+#include "ns3/fuota-sender-helper.h"
 #include <algorithm>
 #include <ctime>
 
@@ -28,37 +30,37 @@ NS_LOG_COMPONENT_DEFINE ("ClassCSimpleLorawanNetworkExample");
 int main (int argc, char *argv[])
 {
 
-  // Set up logging
-  LogComponentEnable ("ClassCSimpleLorawanNetworkExample", LOG_LEVEL_ALL);
-  LogComponentEnable ("LoraChannel", LOG_LEVEL_INFO);
-  LogComponentEnable ("LoraPhy", LOG_LEVEL_ALL);
-  LogComponentEnable ("EndDeviceLoraPhy", LOG_LEVEL_ALL);
-  LogComponentEnable ("GatewayLoraPhy", LOG_LEVEL_ALL);
-  LogComponentEnable ("LoraInterferenceHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("LorawanMac", LOG_LEVEL_ALL);
-  LogComponentEnable ("EndDeviceLorawanMac", LOG_LEVEL_ALL);
-  LogComponentEnable ("ClassCEndDeviceLorawanMac", LOG_LEVEL_ALL);
+// Logging
+  //////////
+
+  // LogComponentEnable ("GatewayToEnddeviceExample", LOG_LEVEL_ALL);
+  // LogComponentEnable ("NetworkServer", LOG_LEVEL_ALL);
+  // LogComponentEnable ("NetworkStatus", LOG_LEVEL_ALL);
   LogComponentEnable ("GatewayLorawanMac", LOG_LEVEL_ALL);
-  LogComponentEnable ("LogicalLoraChannelHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("LogicalLoraChannel", LOG_LEVEL_ALL);
-  LogComponentEnable ("LoraHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("LoraPhyHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("LorawanMacHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("OneShotSenderHelper", LOG_LEVEL_ALL);
-  LogComponentEnable ("OneShotSender", LOG_LEVEL_ALL);
-  LogComponentEnable ("LorawanMacHeader", LOG_LEVEL_ALL);
-  LogComponentEnable ("LoraFrameHeader", LOG_LEVEL_ALL);
+  // LogComponentEnable("LoraFrameHeader", LOG_LEVEL_ALL);
+  // LogComponentEnable("LorawanMacHeader", LOG_LEVEL_ALL);
+  // LogComponentEnable("MacCommand", LOG_LEVEL_ALL);
+  // LogComponentEnable("GatewayLoraPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable("LoraPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable("LoraChannel", LOG_LEVEL_ALL);
+  // LogComponentEnable("EndDeviceLoraPhy", LOG_LEVEL_ALL);
+  // LogComponentEnable("LogicalLoraChannelHelper", LOG_LEVEL_ALL);
+  // LogComponentEnable ("EndDeviceLorawanMac", LOG_LEVEL_ALL);
+  // LogComponentEnable ("LorawanMacHelper", LOG_LEVEL_ALL);
+  LogComponentEnable ("ClassCEndDeviceLorawanMac", LOG_LEVEL_ALL);
+  LogComponentEnable ("FuotaSender", LOG_LEVEL_ALL);
+  // LogComponentEnable("PointToPointNetDevice", LOG_LEVEL_ALL);
+  // LogComponentEnable ("Forwarder", LOG_LEVEL_ALL);
+  LogComponentEnable ("FuotaSenderHelper", LOG_LEVEL_ALL);
+  // LogComponentEnable ("DeviceStatus", LOG_LEVEL_ALL);
+  // LogComponentEnable ("GatewayStatus", LOG_LEVEL_ALL);
   LogComponentEnableAll (LOG_PREFIX_FUNC);
   LogComponentEnableAll (LOG_PREFIX_NODE);
   LogComponentEnableAll (LOG_PREFIX_TIME);
 
-  /************************
-  *  Create the channel  *
-  ************************/
+  // Create a simple wireless channel
+  ///////////////////////////////////
 
-  NS_LOG_INFO ("Creating the channel...");
-
-  // Create the lora channel object
   Ptr<LogDistancePropagationLossModel> loss = CreateObject<LogDistancePropagationLossModel> ();
   loss->SetPathLossExponent (3.76);
   loss->SetReference (1, 7.7);
@@ -67,18 +69,21 @@ int main (int argc, char *argv[])
 
   Ptr<LoraChannel> channel = CreateObject<LoraChannel> (loss, delay);
 
-  /************************
-  *  Create the helpers  *
-  ************************/
+  // Helpers
+  //////////
 
-  NS_LOG_INFO ("Setting up helpers...");
+  // End Device mobility
+  MobilityHelper mobilityEd, mobilityGw;
+  Ptr<ListPositionAllocator> positionAllocEd = CreateObject<ListPositionAllocator> ();
+  positionAllocEd->Add (Vector (1000.0, 1000.0, 100.0));
+  mobilityEd.SetPositionAllocator (positionAllocEd);
+  mobilityEd.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
-  MobilityHelper mobility;
-  Ptr<ListPositionAllocator> allocator = CreateObject<ListPositionAllocator> ();
-  allocator->Add (Vector (1000,0,0));
-  allocator->Add (Vector (0,0,0));
-  mobility.SetPositionAllocator (allocator);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  // Gateway mobility
+  Ptr<ListPositionAllocator> positionAllocGw = CreateObject<ListPositionAllocator> ();
+  positionAllocGw->Add (Vector (10.0, 10.0, 10.0));
+  mobilityGw.SetPositionAllocator (positionAllocGw);
+  mobilityGw.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
   // Create the LoraPhyHelper
   LoraPhyHelper phyHelper = LoraPhyHelper ();
@@ -90,63 +95,89 @@ int main (int argc, char *argv[])
   // Create the LoraHelper
   LoraHelper helper = LoraHelper ();
 
-  /************************
-  *  Create End Devices  *
-  ************************/
+  // Create EDs
+  /////////////
 
-  NS_LOG_INFO ("Creating the end device...");
-
-  // Create a set of nodes
   NodeContainer endDevices;
   endDevices.Create (1);
+  mobilityEd.Install (endDevices);
 
-  // Assign a mobility model to the node
-  mobility.Install (endDevices);
+  // Create a LoraDeviceAddressGenerator
+  uint8_t nwkId = 54;
+  uint32_t nwkAddr = 1864;
+  Ptr<LoraDeviceAddressGenerator> addrGen = CreateObject<LoraDeviceAddressGenerator> (nwkId,nwkAddr);
 
   // Create the LoraNetDevices of the end devices
   phyHelper.SetDeviceType (LoraPhyHelper::ED);
   macHelper.SetDeviceType (LorawanMacHelper::ED_C);
+  macHelper.SetAddressGenerator (addrGen);
+  macHelper.SetRegion (LorawanMacHelper::EU);
   helper.Install (phyHelper, macHelper, endDevices);
 
-  /*********************
-  *  Create Gateways  *
-  *********************/
+  // Set message type (Default is unconfirmed)
+  Ptr<LorawanMac> edMac1 = endDevices.Get (0)->GetDevice (0)->GetObject<LoraNetDevice> ()->GetMac ();
+  Ptr<ClassCEndDeviceLorawanMac> edLorawanMac1 = edMac1->GetObject<ClassCEndDeviceLorawanMac> ();
 
-  NS_LOG_INFO ("Creating the gateway...");
+  for (NodeContainer::Iterator j = endDevices.Begin (); j != endDevices.End (); ++j)
+    {
+      Ptr<Node> node = *j;
+      Ptr<LoraNetDevice> loraNetDevice = node->GetDevice (0)->GetObject<LoraNetDevice> ();
+      Ptr<LoraPhy> phy = loraNetDevice->GetPhy ();
+    }
+
+  // Install applications in EDs
+
+  OneShotSenderHelper oneShotHelper = OneShotSenderHelper ();
+  oneShotHelper.SetSendTime (Seconds (1));
+  oneShotHelper.Install (endDevices.Get (0));
+  // oneShotHelper.SetSendTime (Seconds (10));
+  // oneShotHelper.Install (endDevices.Get (1));
+  // oneShotHelper.SetSendTime (Seconds (8));
+  // oneShotHelper.Install(endDevices.Get (1));
+  // oneShotHelper.SetSendTime (Seconds (12));
+  // oneShotHelper.Install(endDevices.Get (2));
+
+  ////////////////
+  // Create GWs //
+  ////////////////
+
   NodeContainer gateways;
   gateways.Create (1);
+  mobilityGw.Install (gateways);
 
-  mobility.Install (gateways);
-
-  // Create a netdevice for each gateway
+  // Create the LoraNetDevices of the gateways
   phyHelper.SetDeviceType (LoraPhyHelper::GW);
   macHelper.SetDeviceType (LorawanMacHelper::GW);
   helper.Install (phyHelper, macHelper, gateways);
-  NS_LOG_INFO("Done creating/installing gateways");
 
-  /*********************************************
-  *  Install applications on the end devices  *
-  *********************************************/
+  // Set spreading factors up
+  macHelper.SetSpreadingFactorsUp (endDevices, gateways, channel);
 
-  OneShotSenderHelper oneShotSenderHelper;
-  oneShotSenderHelper.SetSendTime (Seconds (2));
+  ////////////
+  // Create NS
+  ////////////
 
-  oneShotSenderHelper.Install (gateways);
+  NodeContainer networkServers;
+  networkServers.Create (1);
 
-  /******************
-   * Set Data Rates *
-   ******************/
-  std::vector<int> sfQuantity (6);
-  sfQuantity = macHelper.SetSpreadingFactorsUp (endDevices, gateways, channel);
+  // // Install the NetworkServer application on the network server
+  NetworkServerHelper networkServerHelper;
+  networkServerHelper.SetGateways (gateways);
+  networkServerHelper.SetEndDevices (endDevices);
+  networkServerHelper.Install (networkServers);
 
-  /****************
-  *  Simulation  *
-  ****************/
+  FuotaSenderHelper fuotaSenderHelper = FuotaSenderHelper ();
+  fuotaSenderHelper.SetSendTime (Seconds (10));
+  fuotaSenderHelper.SetDeviceIdAndAddress (nwkId, nwkAddr);
+  fuotaSenderHelper.Install (gateways.Get (0));
 
-  Simulator::Stop (Hours (2));
+  // Install the Forwarder application on the gateways
+  // ForwarderHelper forwarderHelper;
+  // forwarderHelper.Install (gateways);
 
+  // Start simulation
+  Simulator::Stop (Seconds (800));
   Simulator::Run ();
-
   Simulator::Destroy ();
 
   return 0;
