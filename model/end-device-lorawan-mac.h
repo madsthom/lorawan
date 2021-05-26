@@ -357,7 +357,7 @@ protected:
   /**
    * The DataRate this device is using to transmit.
    */
-  uint8_t m_dataRate;
+  TracedValue<uint8_t> m_dataRate;
 
   /**
    * The transmission power this device is using to transmit.
@@ -491,7 +491,7 @@ private:
    */
   LorawanMacHeader::MType m_mType;
 
-  uint8_t m_currentFCnt;
+  uint16_t m_currentFCnt;
 };
 
 

@@ -52,6 +52,11 @@ EndDeviceLorawanMac::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&EndDeviceLorawanMac::m_dataRate),
                    MakeUintegerChecker<uint8_t> (0, 5))
+    .AddTraceSource ("DataRate",
+                     "Data Rate currently employed by this end device",
+                     MakeTraceSourceAccessor
+                       (&EndDeviceLorawanMac::m_dataRate),
+                     "ns3::TracedValueCallback::uint8_t")
     .AddAttribute ("DRControl",
                    "Whether to request the NS to control this device's Data Rate",
                    BooleanValue (),
@@ -153,15 +158,6 @@ EndDeviceLorawanMac::Send (Ptr<Packet> packet)
 {
   NS_LOG_FUNCTION (this << packet);
 
-  // Check that payload length is below the allowed maximum
-  if (packet->GetSize () > m_maxAppPayloadForDataRate.at (m_dataRate))
-    {
-      NS_LOG_WARN ("Attempting to send a packet larger than the maximum allowed"
-                   << " size at this DataRate (DR" << unsigned(m_dataRate) <<
-                   "). Transmission canceled.");
-      return;
-    }
-
   // If it is not possible to transmit now because of the duty cycle,
   // or because we are receiving, schedule a tx/retx later
 
@@ -227,6 +223,16 @@ EndDeviceLorawanMac::DoSend (Ptr<Packet> packet)
       NS_LOG_INFO ("Added frame header of size " << frameHdr.GetSerializedSize () <<
                    " bytes.");
 
+      // Check that MACPayload length is below the allowed maximum
+      if (packet->GetSize () > m_maxAppPayloadForDataRate.at (m_dataRate))
+        {
+          NS_LOG_WARN ("Attempting to send a packet larger than the maximum allowed"
+                       << " size at this DataRate (DR" << unsigned(m_dataRate) <<
+                       "). Transmission canceled.");
+          return;
+        }
+
+
       // Add the Lora Mac header to the packet
       LorawanMacHeader macHdr;
       ApplyNecessaryOptions (macHdr);
@@ -282,8 +288,6 @@ EndDeviceLorawanMac::DoSend (Ptr<Packet> packet)
     {
       if (m_retxParams.waitingAck)
         {
-
-          m_currentFCnt++;
 
           // Remove the headers
           LorawanMacHeader macHdr;
