@@ -62,6 +62,13 @@ ClassCEndDeviceLorawanMac::ClassCEndDeviceLorawanMac () :
   m_closeSecondWindow.Cancel ();
   m_secondReceiveWindow = EventId ();
   m_secondReceiveWindow.Cancel ();
+
+  if (m_is_class_c)
+    {
+      m_classCReceiveWindow = EventId ();
+      m_classCReceiveWindow.Cancel ();
+      m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow, this);
+    }
 }
 
 ClassCEndDeviceLorawanMac::~ClassCEndDeviceLorawanMac ()
@@ -181,6 +188,8 @@ ClassCEndDeviceLorawanMac::Receive (Ptr<Packet const> packet)
           // Parse the MAC commands
           ParseCommands (fHdr);
 
+          ParsePortSpecificCommands(fHdr);
+
           // TODO Pass the packet up to the NetDevice
 
 
@@ -234,7 +243,14 @@ ClassCEndDeviceLorawanMac::Receive (Ptr<Packet const> packet)
         }
     }
 
-  m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToSleep ();
+  if (m_is_class_c)
+    {
+      m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToStandby ();
+    }
+  else
+    {
+      m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToSleep ();
+    }
 }
 
 void
@@ -268,15 +284,22 @@ void
 ClassCEndDeviceLorawanMac::TxFinished (Ptr<const Packet> packet)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("TX FINISHED");
 
   // Schedule the opening of the first receive window
   Simulator::Schedule (m_receiveDelay1,
                        &ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow, this);
 
-  // Schedule the opening of the second receive window
-  m_secondReceiveWindow = Simulator::Schedule (m_receiveDelay2,
-                                               &ClassCEndDeviceLorawanMac::OpenSecondReceiveWindow,
-                                               this);
+  if (m_is_class_c)
+    {
+      // Schedule the opening of the class c receive window
+  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
+    }
+  else
+    {
+      m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToSleep ();
+    }
+
   // // Schedule the opening of the first receive window
   // Simulator::Schedule (m_receiveDelay1,
   //                      &ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow, this);
@@ -286,14 +309,26 @@ ClassCEndDeviceLorawanMac::TxFinished (Ptr<const Packet> packet)
   //                                              &ClassCEndDeviceLorawanMac::OpenSecondReceiveWindow,
   //                                              this);
 
-  // Switch the PHY to sleep
-  m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToSleep ();
+  if (m_is_class_c)
+    {
+      m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToStandby ();
+    }
+  else
+    {
+      m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToSleep ();
+    }
 }
 
 void
 ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("Open 1st Receive Window");
+
+  if (m_is_class_c)
+    {
+      m_closeClassCWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
+    }
 
   // Set Phy in Standby mode
   m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToStandby ();
@@ -306,13 +341,18 @@ ClassCEndDeviceLorawanMac::OpenFirstReceiveWindow (void)
   // (LoraWAN specification)
   m_closeFirstWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
                                             &ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow, this); //m_receiveWindowDuration
-
 }
 
 void
 ClassCEndDeviceLorawanMac::CloseFirstReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("Closing 1st Receive Window");
+  
+  if (m_is_class_c)
+    {
+      m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
+    }
 
   Ptr<EndDeviceLoraPhy> phy = m_phy->GetObject<EndDeviceLoraPhy> ();
 
@@ -344,7 +384,12 @@ void
 ClassCEndDeviceLorawanMac::OpenSecondReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
-
+  NS_LOG_INFO("Opening 2 Receive Window");
+  
+  if (m_is_class_c)
+    {
+      m_closeClassCWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
+    }
   // Check for receiver status: if it's locked on a packet, don't open this
   // window at all.
   if (m_phy->GetObject<EndDeviceLoraPhy> ()->GetState () == EndDeviceLoraPhy::RX)
@@ -381,7 +426,109 @@ void
 ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_INFO("Closing 2 Receive Window");
 
+  Ptr<EndDeviceLoraPhy> phy = m_phy->GetObject<EndDeviceLoraPhy> ();
+
+  // NS_ASSERT (phy->m_state != EndDeviceLoraPhy::TX &&
+  // phy->m_state != EndDeviceLoraPhy::SLEEP);
+
+  // Check the Phy layer's state:
+  // - RX -> We have received a preamble.
+  // - STANDBY -> Nothing was detected.
+  switch (phy->GetState ())
+    {
+      case EndDeviceLoraPhy::TX:
+        break;
+      case EndDeviceLoraPhy::SLEEP:
+        break;
+      case EndDeviceLoraPhy::RX:
+        // PHY is receiving: let it finish
+        NS_LOG_DEBUG ("PHY is receiving: Receive will handle the result.");
+        return;
+      case EndDeviceLoraPhy::STANDBY:
+        // Turn PHY layer to sleep
+        phy->SwitchToSleep ();
+        break;
+    }
+
+  if (m_retxParams.waitingAck)
+    {
+      NS_LOG_DEBUG ("No reception initiated by PHY: rescheduling transmission.");
+      if (m_retxParams.retxLeft > 0 )
+        {
+          NS_LOG_INFO ("We have " << unsigned(m_retxParams.retxLeft) << " retransmissions left: rescheduling transmission.");
+          this->Send (m_retxParams.packet);
+        }
+
+      else if (m_retxParams.retxLeft == 0 && m_phy->GetObject<EndDeviceLoraPhy> ()->GetState () != EndDeviceLoraPhy::RX)
+        {
+          uint8_t txs = m_maxNumbTx - (m_retxParams.retxLeft);
+          m_requiredTxCallback (txs, false, m_retxParams.firstAttempt, m_retxParams.packet);
+          NS_LOG_DEBUG ("Failure: no more retransmissions left. Used " << unsigned(txs) << " transmissions.");
+
+          // Reset retransmission parameters
+          resetRetransmissionParameters ();
+        }
+
+      else
+        {
+          NS_ABORT_MSG ("The number of retransmissions left is negative ! ");
+        }
+    }
+  else
+    {
+      uint8_t txs = m_maxNumbTx - (m_retxParams.retxLeft );
+      m_requiredTxCallback (txs, true, m_retxParams.firstAttempt, m_retxParams.packet);
+      NS_LOG_INFO ("We have " << unsigned(m_retxParams.retxLeft) <<
+                   " transmissions left. We were not transmitting confirmed messages.");
+
+      // Reset retransmission parameters
+      resetRetransmissionParameters ();
+    }
+
+  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
+}
+
+void
+ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow (void)
+{
+  NS_LOG_FUNCTION_NOARGS ();
+
+  // Check for receiver status: if it's locked on a packet, don't open this
+  // window at all.
+  if (m_phy->GetObject<EndDeviceLoraPhy> ()->GetState () == EndDeviceLoraPhy::RX)
+    {
+      NS_LOG_INFO ("Won't open class c receive window since we are in RX mode.");
+
+      return;
+    }
+
+  // Set Phy in Standby mode
+  m_phy->GetObject<EndDeviceLoraPhy> ()->SwitchToStandby ();
+
+  // Switch to appropriate channel and data rate
+  NS_LOG_INFO ("Using parameters: " << m_secondReceiveWindowFrequency << "Hz, DR"
+                                    << unsigned(m_secondReceiveWindowDataRate));
+
+  m_phy->GetObject<EndDeviceLoraPhy> ()->SetFrequency
+    (m_secondReceiveWindowFrequency);
+  m_phy->GetObject<EndDeviceLoraPhy> ()->SetSpreadingFactor (GetSfFromDataRate
+                                                               (m_secondReceiveWindowDataRate));
+
+  //Calculate the duration of a single symbol for the second receive window DR
+  //double tSym = pow (2, GetSfFromDataRate (GetSecondReceiveWindowDataRate ())) / GetBandwidthFromDataRate ( GetSecondReceiveWindowDataRate ());
+
+  // Schedule return to sleep after "at least the time required by the end
+  // device's radio transceiver to effectively detect a downlink preamble"
+  // (LoraWAN specification)
+  // m_closeSecondWindow = Simulator::Schedule (Seconds (m_receiveWindowDurationInSymbols * tSym),
+  //                                            &ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow, this);
+}
+
+void
+ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow (void)
+{
   Ptr<EndDeviceLoraPhy> phy = m_phy->GetObject<EndDeviceLoraPhy> ();
 
   // NS_ASSERT (phy->m_state != EndDeviceLoraPhy::TX &&
@@ -442,18 +589,6 @@ ClassCEndDeviceLorawanMac::CloseSecondReceiveWindow (void)
     }
 }
 
-void
-ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow (void)
-{
-  // TODO: Opening of RXC
-}
-
-void
-ClassCEndDeviceLorawanMac::CloseClassCReceiveWindow (void)
-{
-  // TODO: Closing of RXC
-}
-
 /////////////////////////
 // Getters and Setters //
 /////////////////////////
@@ -462,6 +597,8 @@ Time
 ClassCEndDeviceLorawanMac::GetNextClassTransmissionDelay (Time waitingTime)
 {
   NS_LOG_FUNCTION_NOARGS ();
+
+  NS_LOG_INFO(waitingTime);
 
   // This is a new packet from APP; it can not be sent until the end of the
   // second receive window (if the second recieve window has not closed yet)
@@ -582,6 +719,24 @@ ClassCEndDeviceLorawanMac::OnRxClassParamSetupReq (Ptr<RxParamSetupReq> rxParamS
   m_macCommandList.push_back (CreateObject<RxParamSetupAns> (offsetOk,
                                                              dataRateOk, true));
 
+}
+
+void
+ClassCEndDeviceLorawanMac::ParsePortSpecificCommands (LoraFrameHeader frameheader)
+{
+  uint8_t fport = frameheader.GetFPort();
+  NS_LOG_INFO("FPORT for message: " << unsigned(fport));
+
+  if (fport == 205)
+    {
+      NS_LOG_INFO("Switched to Class C");
+      m_is_class_c = true;
+    }
+  else if (fport == 206)
+   {
+     NS_LOG_INFO("Switched back to Class A");
+     m_is_class_c = false;
+   }
 }
 
 } /* namespace lorawan */

@@ -134,6 +134,16 @@ LorawanMacHelper::Create (Ptr<Node> node, Ptr<NetDevice> device) const
           }
         }
     }
+  NS_LOG_INFO("Device type: " << m_deviceType);
+  // fixme: This is not a good solution
+  if (m_deviceType == ED_C)
+    {
+      mac->GetObject<EndDeviceLorawanMac>()->m_is_class_c = true;
+    }
+  else if (m_deviceType == ED_A)
+    {
+      mac->GetObject<EndDeviceLorawanMac>()->m_is_class_c = false;
+    }
   return mac;
 }
 
@@ -638,8 +648,8 @@ LorawanMacHelper::SetSpreadingFactorsGivenDistribution (NodeContainer endDevices
       Ptr<NetDevice> netDevice = object->GetDevice (0);
       Ptr<LoraNetDevice> loraNetDevice = netDevice->GetObject<LoraNetDevice> ();
       NS_ASSERT (loraNetDevice != 0);
-      Ptr<ClassAEndDeviceLorawanMac> mac =
-          loraNetDevice->GetMac ()->GetObject<ClassAEndDeviceLorawanMac> ();
+      Ptr<EndDeviceLorawanMac> mac =
+          loraNetDevice->GetMac ()->GetObject<EndDeviceLorawanMac> ();
       NS_ASSERT (mac != 0);
 
       double prob = uniformRV->GetValue (0, 1);

@@ -187,6 +187,8 @@ public:
    */
   virtual void OnRxClassParamSetupReq (Ptr<RxParamSetupReq> rxParamSetupReq);
 
+  void ParsePortSpecificCommands(LoraFrameHeader frameheader);
+
 private:
 
   /**

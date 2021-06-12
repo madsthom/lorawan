@@ -57,7 +57,7 @@ NetworkStatus::~NetworkStatus ()
 }
 
 void
-NetworkStatus::AddNode (Ptr<ClassAEndDeviceLorawanMac> edMac)
+NetworkStatus::AddNode (Ptr<EndDeviceLorawanMac> edMac)
 {
   NS_LOG_FUNCTION (this << edMac);
 
@@ -67,7 +67,7 @@ NetworkStatus::AddNode (Ptr<ClassAEndDeviceLorawanMac> edMac)
     {
       // The device doesn't exist. Create new EndDeviceStatus
       Ptr<EndDeviceStatus> edStatus = CreateObject<EndDeviceStatus>
-        (edAddress, edMac->GetObject<ClassAEndDeviceLorawanMac>());
+        (edAddress, edMac->GetObject<EndDeviceLorawanMac>());
 
       // Add it to the map
       m_endDeviceStatuses.insert (std::pair<LoraDeviceAddress, Ptr<EndDeviceStatus> >
@@ -187,17 +187,70 @@ NetworkStatus::GetReplyForDevice (LoraDeviceAddress edAddress, int windowNumber)
   switch (windowNumber)
     {
     case 1:
-      tag.SetDataRate (edStatus->GetMac ()->GetFirstReceiveWindowDataRate ());
-      tag.SetFrequency (edStatus->GetFirstReceiveWindowFrequency ());
+      SetDRAndFreqForFirstWindowOnTag(tag, edStatus);
       break;
     case 2:
-      tag.SetDataRate (edStatus->GetMac ()->GetSecondReceiveWindowDataRate ());
-      tag.SetFrequency (edStatus->GetSecondReceiveWindowFrequency ());
+      SetDRAndFreqForSecondWindowOnTag(tag, edStatus);
       break;
     }
 
   packet->AddPacketTag (tag);
   return packet;
+}
+
+void
+NetworkStatus::SetDRAndFreqForFirstWindowOnTag(LoraTag &tag, Ptr<EndDeviceStatus> endDeviceStatus)
+{
+  Ptr<EndDeviceLorawanMac> endDeviceMac = endDeviceStatus->GetMac ()->GetObject<EndDeviceLorawanMac>();
+
+  if (endDeviceMac->GetObject<ClassAEndDeviceLorawanMac>() != 0)
+    {
+      NS_LOG_INFO("CLASS A: Datarate - network status: " << endDeviceMac->GetObject<ClassAEndDeviceLorawanMac>()->GetFirstReceiveWindowDataRate ());
+      tag.SetDataRate (endDeviceMac->GetObject<ClassAEndDeviceLorawanMac>()->GetFirstReceiveWindowDataRate ());
+    }
+
+  if (endDeviceMac->GetObject<ClassCEndDeviceLorawanMac>() != 0)
+    {
+      NS_LOG_INFO("CLASS C: Datarate - network status: " << endDeviceMac->GetObject<ClassCEndDeviceLorawanMac>()->GetFirstReceiveWindowDataRate ());
+      tag.SetDataRate (endDeviceMac->GetObject<ClassCEndDeviceLorawanMac>()->GetFirstReceiveWindowDataRate ());
+    }
+  
+  // Make sure EndDeviceMac is found
+  NS_ASSERT_MSG(endDeviceMac != 0, "Could not find EndDeviceMac - Can't apply DataRate and Frequency to LoraTag");
+
+  NS_LOG_INFO("Frequency - network status: " << endDeviceStatus->GetFirstReceiveWindowFrequency ());
+
+  tag.SetFrequency (endDeviceStatus->GetFirstReceiveWindowFrequency ());
+
+  NS_LOG_INFO("Frequency " << tag.GetFrequency());
+  NS_LOG_INFO("Datarate " << tag.GetDataRate());
+}
+
+void
+NetworkStatus::SetDRAndFreqForSecondWindowOnTag(LoraTag &tag, Ptr<EndDeviceStatus> endDeviceStatus)
+{
+  Ptr<EndDeviceLorawanMac> endDeviceMac;
+
+  endDeviceMac = endDeviceStatus->GetMac ()->GetObject<ClassAEndDeviceLorawanMac>();
+  if (endDeviceMac != 0)
+    {
+      tag.SetDataRate (endDeviceMac->GetObject<ClassAEndDeviceLorawanMac>()->GetSecondReceiveWindowDataRate ());
+      tag.SetFrequency (endDeviceStatus->GetSecondReceiveWindowFrequency ());
+      NS_LOG_INFO("CLASS A: SETTING DATARATE TO " << tag.GetFrequency());
+      return;
+    }
+
+  endDeviceMac = endDeviceStatus->GetMac ()->GetObject<ClassCEndDeviceLorawanMac>();
+  if (endDeviceMac != 0)
+    {
+      tag.SetDataRate (endDeviceMac->GetObject<ClassCEndDeviceLorawanMac>()->GetSecondReceiveWindowDataRate ());
+      tag.SetFrequency (endDeviceStatus->GetSecondReceiveWindowFrequency ());
+      NS_LOG_INFO("CLASS C: SETTING DATARATE TO " << tag.GetFrequency());
+      return;
+    }
+  
+  // Make sure EndDeviceMac is found
+  NS_ASSERT_MSG(endDeviceMac != 0, "Could not find EndDeviceMac - Can't apply DataRate and Frequency to LoraTag");
 }
 
 Ptr<EndDeviceStatus>

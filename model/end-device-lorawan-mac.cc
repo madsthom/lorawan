@@ -519,6 +519,7 @@ EndDeviceLorawanMac::TxFinished (Ptr<const Packet> packet)
 Time
 EndDeviceLorawanMac::GetNextClassTransmissionDelay (Time waitingTime)
 {
+  // TODO: Implement this for Class A and Class C.
   NS_LOG_FUNCTION_NOARGS ();
   return waitingTime;
 }

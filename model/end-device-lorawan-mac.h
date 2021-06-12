@@ -331,6 +331,8 @@ public:
    */
   void AddMacCommand (Ptr<MacCommand> macCommand);
 
+  bool m_is_class_c; // TODO: This is a temporary solution!
+
 protected:
   /**
    * Structure representing the parameters that will be used in the

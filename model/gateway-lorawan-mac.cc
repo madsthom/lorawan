@@ -61,11 +61,23 @@ GatewayLorawanMac::Send (Ptr<Packet> packet)
   packet->RemovePacketTag (tag);
   uint8_t dataRate = tag.GetDataRate ();
   double frequency = tag.GetFrequency ();
+
+//   if (!response_packet) {
+// //    Ptr<LogicalLoraChannel> txChannel = GetChannelForTx ();
+// //    frequency = txChannel->GetFrequency ();
+//     frequency = 869.525;
+//     dataRate = 0;
+//   }
+
+//   dataRate = 0;
+
   NS_LOG_DEBUG ("DR: " << unsigned (dataRate));
   NS_LOG_DEBUG ("SF: " << unsigned (GetSfFromDataRate (dataRate)));
   NS_LOG_DEBUG ("BW: " << GetBandwidthFromDataRate (dataRate));
   NS_LOG_DEBUG ("Freq: " << frequency << " MHz");
   packet->AddPacketTag (tag);
+
+  NS_LOG_DEBUG("Waiting time: " << m_channelHelper.GetWaitingTime(CreateObject<LogicalLoraChannel> (frequency)));
 
   // Make sure we can transmit this packet
   if (m_channelHelper.GetWaitingTime(CreateObject<LogicalLoraChannel> (frequency)) > Time(0))

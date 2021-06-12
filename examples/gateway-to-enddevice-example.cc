@@ -1,36 +1,44 @@
 /*
- * This script simulates a simple network in which one end device sends one
- * packet to the gateway.
+ * This example creates a simple network in which all LoRaWAN components are
+ * simulated: End Devices, some Gateways and a Network Server.
+ * Two end devices are already configured to send unconfirmed and confirmed messages respectively.
  */
 
-#include "ns3/end-device-lora-phy.h"
-#include "ns3/gateway-lora-phy.h"
-#include "ns3/end-device-lorawan-mac.h"
-#include "ns3/gateway-lorawan-mac.h"
-#include "ns3/simulator.h"
-#include "ns3/log.h"
-#include "ns3/constant-position-mobility-model.h"
-#include "ns3/lora-helper.h"
-#include "ns3/mobility-helper.h"
-#include "ns3/node-container.h"
-#include "ns3/position-allocator.h"
-#include "ns3/one-shot-sender-helper.h"
-#include "ns3/periodic-sender-helper.h"
-#include "ns3/command-line.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/forwarder-helper.h"
 #include "ns3/network-server-helper.h"
+#include "ns3/lora-channel.h"
+#include "ns3/mobility-helper.h"
+#include "ns3/lora-phy-helper.h"
+#include "ns3/lorawan-mac-helper.h"
+#include "ns3/one-shot-sender-helper.h"
+#include "ns3/lora-helper.h"
+#include "ns3/gateway-lora-phy.h"
+#include "ns3/periodic-sender.h"
+#include "ns3/periodic-sender-helper.h"
+#include "ns3/log.h"
+#include "ns3/string.h"
+#include "ns3/command-line.h"
+#include "ns3/core-module.h"
+#include "ns3/network-module.h"
+#include "ns3/lora-device-address-generator.h"
 #include "ns3/fuota-sender-helper.h"
-#include <algorithm>
-#include <ctime>
 
 using namespace ns3;
 using namespace lorawan;
 
-NS_LOG_COMPONENT_DEFINE ("ClassCSimpleLorawanNetworkExample");
+NS_LOG_COMPONENT_DEFINE ("GatewayToEnddeviceExample");
 
 int main (int argc, char *argv[])
 {
 
-// Logging
+  bool verbose = false;
+
+  CommandLine cmd;
+  cmd.AddValue ("verbose", "Whether to print output or not", verbose);
+  cmd.Parse (argc, argv);
+
+  // Logging
   //////////
 
   // LogComponentEnable ("GatewayToEnddeviceExample", LOG_LEVEL_ALL);
