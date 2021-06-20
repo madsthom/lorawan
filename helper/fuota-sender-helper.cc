@@ -47,8 +47,13 @@ FuotaSenderHelper::SetSendTime (Time sendTime)
 }
 
 void
-FuotaSenderHelper::SetAttribute (std::string name,
-                                   const AttributeValue &value)
+FuotaSenderHelper::SetNumberOfPacketsToSend (int nPacketsToSend)
+{
+  m_nPacketsToSend = nPacketsToSend;
+}
+
+void
+FuotaSenderHelper::SetAttribute (std::string name, const AttributeValue &value)
 {
   m_factory.Set (name, value);
 }
@@ -85,6 +90,7 @@ FuotaSenderHelper::InstallPriv (Ptr<Node> node) const
   Ptr<FuotaSender> app = m_factory.Create<FuotaSender> ();
 
   app->SetSendTime (m_sendTime);
+  app->SetNPacketsToSend (m_nPacketsToSend);
   app->SetDeviceIdAndAddress(m_nwkId, m_nwkAddr);
 
   app->SetNode (node);

@@ -271,7 +271,23 @@ protected:
   Listeners m_listeners; //!< PHY listeners
 };
 
-} /* namespace ns3 */
+inline std::ostream &
+operator<< (std::ostream &os, const EndDeviceLoraPhy::State &state)
+{
+  switch (state)
+    {
+    case EndDeviceLoraPhy::State::SLEEP:
+      return os << "SLEEP";
+    case EndDeviceLoraPhy::State::STANDBY:
+      return os << "STANDBY";
+    case EndDeviceLoraPhy::State::TX:
+      return os << "TX";
+    case EndDeviceLoraPhy::State::RX:
+      return os << "RX";
+    }
+  return os;
+};
 
+} // namespace lorawan
 }
 #endif /* END_DEVICE_LORA_PHY_H */

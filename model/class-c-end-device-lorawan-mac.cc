@@ -293,7 +293,8 @@ ClassCEndDeviceLorawanMac::TxFinished (Ptr<const Packet> packet)
   if (m_is_class_c)
     {
       // Schedule the opening of the class c receive window
-  m_classCReceiveWindow = Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
+      m_classCReceiveWindow =
+          Simulator::ScheduleNow (&ClassCEndDeviceLorawanMac::OpenClassCReceiveWindow, this);
     }
   else
     {

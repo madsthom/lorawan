@@ -69,6 +69,14 @@ FuotaSender::SetSendTime (Time sendTime)
   m_sendTime = sendTime;
 }
 
+void
+FuotaSender::SetNPacketsToSend (int nPacketsToSend)
+{
+  NS_LOG_FUNCTION (this << nPacketsToSend);
+
+  m_nPacketsToSend = nPacketsToSend;
+}
+
 void FuotaSender::SetDeviceIdAndAddress(uint8_t nwkId, uint32_t nwkAddr)
 {
   m_nwkId = nwkId;
@@ -94,12 +102,12 @@ FuotaSender::SetFrameHeaderWithFPort(uint8_t fport)
 }
 
 void
-FuotaSender::SendPacketOnFPort (uint8_t fport)
+FuotaSender::SendPacketOnFPort (uint8_t fport, int packetSize)
 {
   NS_LOG_FUNCTION (this);
 
   // Create and send a new packet
-  Ptr<Packet> packet = Create<Packet> (10);
+  Ptr<Packet> packet = Create<Packet> (packetSize);
 
   LoraFrameHeader frameHdr = SetFrameHeaderWithFPort (fport);
 
@@ -116,7 +124,6 @@ FuotaSender::SendPacketOnFPort (uint8_t fport)
   tag.SetFrequency (869.525);
   packet->AddPacketTag (tag);
 
-  
   m_mac->Send (packet);
 }
 
@@ -124,7 +131,7 @@ void
 FuotaSender::SendPacket (void)
 {
   NS_LOG_FUNCTION (this);
-  SendPacketOnFPort(200); 
+  SendPacketOnFPort(200, 20);
 }
 
 void
@@ -147,15 +154,15 @@ FuotaSender::StartApplication (void)
   // Schedule the next couple of SendPacket event
   Simulator::Cancel (m_sendEvent);
   m_sendEvent = Simulator::Schedule (m_sendTime, &FuotaSender::SendPacketOnFPort,
-                                     this, 205);
-  for (int i = 0; i < 10; i++)
+                                     this, 205, 20);
+  for (int i = 0; i < m_nPacketsToSend; i++)
     {
-      m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(14 * i), &FuotaSender::SendPacketOnFPort,
-                                      this, 200);
+      m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(14 * i), &FuotaSender::SendPacketOnFPort,
+                                      this, 200, 20);
     }
   
-  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(12) + Seconds(140), &FuotaSender::SendPacketOnFPort,
-                                     this, 206);
+  m_sendEvent = Simulator::Schedule (m_sendTime + Seconds(14 * (m_nPacketsToSend + 1)), &FuotaSender::SendPacketOnFPort,
+                                     this, 206, 0);
 }
 
 void

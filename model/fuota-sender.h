@@ -44,12 +44,14 @@ public:
    */
   void SendPacket (void);
 
-  void SendPacketOnFPort (uint8_t fport);
+  void SendPacketOnFPort (uint8_t fport, int packetSize);
 
   /**
    * Set the time at which this app will send a packet.
    */
   void SetSendTime (Time sendTime);
+
+  void SetNPacketsToSend (int nPacketsToSend);
 
   void SetDeviceIdAndAddress (uint8_t nwkId, uint32_t nwkAddr);
 
@@ -70,6 +72,8 @@ private:
    * The time at which to send the packet.
    */
   Time m_sendTime;
+
+  int m_nPacketsToSend;
 
   uint8_t m_nwkId;
 

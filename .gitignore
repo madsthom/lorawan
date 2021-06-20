@@ -1,3 +1,4 @@
 /.dir-locals.el
 *.png
 *.dat
+/experiments/class-c-testing

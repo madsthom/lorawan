@@ -19,6 +19,7 @@
  */
 
 #include "ns3/periodic-sender.h"
+#include "ns3/class-c-end-device-lorawan-mac.h"
 #include "ns3/pointer.h"
 #include "ns3/log.h"
 #include "ns3/double.h"
@@ -118,7 +119,15 @@ PeriodicSender::SendPacket (void)
     {
       packet = Create<Packet> (m_basePktSize);
     }
-  m_mac->Send (packet);
+
+  if (m_mac->GetObject<ClassCEndDeviceLorawanMac> ()->m_is_class_c)
+    {
+      // Do nothing
+    }
+  else
+    {
+      m_mac->Send (packet);
+    }
 
   // Schedule the next SendPacket event
   m_sendEvent = Simulator::Schedule (m_interval, &PeriodicSender::SendPacket,

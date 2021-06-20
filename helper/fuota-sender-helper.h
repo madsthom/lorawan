@@ -53,6 +53,8 @@ public:
 
   void SetSendTime (Time sendTime);
 
+  void SetNumberOfPacketsToSend (int nPacketsToSend);
+
   void SetDeviceIdAndAddress (uint8_t nwkId, uint32_t nwkAddr);
 
 private:
@@ -62,6 +64,7 @@ private:
 
   Time m_sendTime; //!< Time at which the OneShotSender will be configured to
                    //send the packet
+  int m_nPacketsToSend;
   uint8_t m_nwkId;
   uint32_t m_nwkAddr;
 };
