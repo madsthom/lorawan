@@ -119,7 +119,7 @@ LoraNetDevice::Send (Ptr<Packet> packet)
 }
 
 void
-LoraNetDevice::Receive (Ptr<Packet> packet)
+LoraNetDevice::Receive (Ptr<const Packet> packet)
 {
   NS_LOG_FUNCTION (this << packet);
 

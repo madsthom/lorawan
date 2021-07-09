@@ -19,6 +19,7 @@
  */
 
 #include "ns3/one-shot-sender.h"
+#include "ns3/callback.h"
 #include "ns3/class-a-end-device-lorawan-mac.h"
 #include "ns3/class-c-end-device-lorawan-mac.h"
 #include "ns3/pointer.h"
@@ -26,6 +27,7 @@
 #include "ns3/double.h"
 #include "ns3/string.h"
 #include "ns3/lora-net-device.h"
+#include "ns3/trace-source-accessor.h"
 
 namespace ns3 {
 namespace lorawan {
@@ -38,19 +40,25 @@ TypeId
 OneShotSender::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::OneShotSender")
-    .SetParent<Application> ()
-    .AddConstructor<OneShotSender> ()
-    .SetGroupName ("lorawan");
+                          .SetParent<Application> ()
+                          .AddConstructor<OneShotSender> ()
+                          .SetGroupName ("lorawan")
+                          .AddTraceSource ("UpdateDownloadComplete",
+                                           "Trace source called when the application has received "
+                                           "enough packets to reconstruct the firmware",
+                                           MakeTraceSourceAccessor (&OneShotSender::m_updateDownloadComplete),
+                                           "ns3::Time::TracedCallback");
   return tid;
 }
 
-OneShotSender::OneShotSender ()
+OneShotSender::OneShotSender () : m_receivedPacketCounter (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }
 
 OneShotSender::OneShotSender (Time sendTime)
-  : m_sendTime (sendTime)
+  : m_sendTime (sendTime),
+    m_receivedPacketCounter (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }
@@ -97,6 +105,27 @@ OneShotSender::StartApplication (void)
   Simulator::Cancel (m_sendEvent);
   m_sendEvent = Simulator::Schedule (m_sendTime, &OneShotSender::SendPacket,
                                      this);
+}
+
+bool
+OneShotSender::Receive (Ptr<NetDevice> netDevice, Ptr<const Packet> packet, uint16_t protocol,
+                        const Address &address)
+{
+  m_receivedPacketCounter++;
+  if (m_receivedPacketCounter < 10)
+    {
+      NS_LOG_DEBUG ("Received a packet!");
+    }
+  else if (m_receivedPacketCounter == 10)
+    {
+      NS_LOG_DEBUG ("Received enough packets");
+      m_updateDownloadComplete (Simulator::Now ());
+    }
+  else
+    {
+      NS_LOG_DEBUG ("Ignoring new packet, we already had enough");
+    }
+  return true;
 }
 
 void

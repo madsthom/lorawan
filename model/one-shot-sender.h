@@ -25,6 +25,7 @@
 #include "ns3/nstime.h"
 #include "ns3/lorawan-mac.h"
 #include "ns3/attribute.h"
+#include "ns3/traced-callback.h"
 
 namespace ns3 {
 namespace lorawan {
@@ -58,6 +59,8 @@ public:
    */
   void StopApplication (void);
 
+  bool Receive (Ptr<NetDevice> netDevice, Ptr<const Packet> packet, uint16_t protocol, const Address & address);
+
 private:
   /**
    * The time at which to send the packet.
@@ -73,6 +76,10 @@ private:
    * The MAC layer of this node.
    */
   Ptr<LorawanMac> m_mac;
+
+  int m_receivedPacketCounter;
+
+  TracedCallback<Time> m_updateDownloadComplete;
 };
 
 } //namespace ns3

@@ -27,6 +27,7 @@
 #include "ns3/end-device-lorawan-mac.h"
 #include "ns3/end-device-lora-phy.h"
 #include "ns3/log.h"
+#include "ns3/lora-net-device.h"
 #include <algorithm>
 
 namespace ns3 {
@@ -175,6 +176,8 @@ ClassCEndDeviceLorawanMac::Receive (Ptr<Packet const> packet)
 
       // Determine whether this packet is for us
       bool messageForUs = (m_address == fHdr.GetAddress ());
+      // XXX For now, we simulate multicast by assuming all messages are for us.
+      messageForUs = true;
 
       if (messageForUs)
         {
@@ -191,7 +194,7 @@ ClassCEndDeviceLorawanMac::Receive (Ptr<Packet const> packet)
           ParsePortSpecificCommands(fHdr);
 
           // TODO Pass the packet up to the NetDevice
-
+          m_device->GetObject<LoraNetDevice>()->Receive(packet);
 
           // Call the trace source
           m_receivedPacket (packet);

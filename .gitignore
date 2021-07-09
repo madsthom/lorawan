@@ -2,3 +2,5 @@
 *.png
 *.dat
 /experiments/class-c-testing
+.gitignore
+.ipynb_checkpoints

@@ -5,6 +5,9 @@ def build(bld):
     obj = bld.create_ns3_program('simple-network-example', ['lorawan'])
     obj.source = 'simple-network-example.cc'
     
+    obj = bld.create_ns3_program('class-c-scaled-up', ['lorawan'])
+    obj.source = 'class-c-scaled-up.cc'
+
     obj = bld.create_ns3_program('class-c-simple-network-example', ['lorawan'])
     obj.source = 'class-c-simple-network-example.cc'
 

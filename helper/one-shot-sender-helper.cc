@@ -19,6 +19,7 @@
  */
 
 #include "ns3/one-shot-sender-helper.h"
+#include "ns3/callback.h"
 #include "ns3/one-shot-sender.h"
 #include "ns3/double.h"
 #include "ns3/string.h"
@@ -82,6 +83,8 @@ OneShotSenderHelper::InstallPriv (Ptr<Node> node) const
 
   app->SetNode (node);
   node->AddApplication (app);
+
+  node->GetDevice(0)->SetReceiveCallback(MakeCallback(&OneShotSender::Receive, app));
 
   return app;
 }
