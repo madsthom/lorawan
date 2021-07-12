@@ -27,6 +27,7 @@
 #include "ns3/string.h"
 #include "ns3/lora-net-device.h"
 #include "ns3/lora-tag.h"
+#include "ns3/uinteger.h"
 
 namespace ns3 {
 namespace lorawan {
@@ -38,20 +39,23 @@ NS_OBJECT_ENSURE_REGISTERED (FuotaSender);
 TypeId
 FuotaSender::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::FuotaSender")
-    .SetParent<Application> ()
-    .AddConstructor<FuotaSender> ()
-    .SetGroupName ("lorawan");
+  static TypeId tid =
+      TypeId ("ns3::FuotaSender")
+          .SetParent<Application> ()
+          .AddConstructor<FuotaSender> ()
+          .SetGroupName ("lorawan")
+          .AddAttribute ("DataRate", "Data Rate to employ when sending the firmware update",
+                         UintegerValue (0), MakeUintegerAccessor (&FuotaSender::m_dataRate),
+                         MakeUintegerChecker<uint8_t> (0, 5));
   return tid;
 }
 
-FuotaSender::FuotaSender ()
+FuotaSender::FuotaSender () : m_dataRate (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }
 
-FuotaSender::FuotaSender (Time sendTime)
-  : m_sendTime (sendTime)
+FuotaSender::FuotaSender (Time sendTime) : m_sendTime (sendTime), m_dataRate (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
 }
@@ -120,7 +124,7 @@ FuotaSender::SendPacketOnFPort (uint8_t fport, int packetSize)
   // Tag the packet with information about frequency and datarate
   LoraTag tag;
   packet->RemovePacketTag (tag);
-  tag.SetDataRate (0);
+  tag.SetDataRate (m_dataRate);
   tag.SetFrequency (869.525);
   packet->AddPacketTag (tag);
 

@@ -88,7 +88,8 @@ private:
    * The MAC layer of this node.
    */
   Ptr<LorawanMac> m_mac;
-  uint8_t m_message_count;
+  uint16_t m_message_count;
+  uint8_t m_dataRate;
 };
 
 } //namespace ns3

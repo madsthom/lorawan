@@ -3,6 +3,7 @@
  * multiple GWs.
  */
 
+#include "ns3/abort.h"
 #include "ns3/basic-energy-source-helper.h"
 #include "ns3/end-device-lora-phy.h"
 #include "ns3/file-helper.h"
@@ -29,6 +30,7 @@
 #include "ns3/fuota-sender-helper.h"
 #include "ns3/vector.h"
 #include <algorithm>
+#include <cmath>
 #include <ctime>
 #include <fstream>
 
@@ -53,11 +55,15 @@ int completedDownloads = 0;
 int nGateways = 2;
 int nDevices = 1;
 int radius = 10e3; // 10 km
+uint8_t dataRate = 0;
 std::vector<bool> edFinished (nDevices, false);
+std::string gwDeployment = "grid";
 
 void
 PrintCoverageRadius (Ptr<PropagationLossModel> lossModel)
 {
+  std::ofstream myfile;
+  myfile.open ("rssi.txt");
   std::vector<double> sensitivities = {-124, -127, -130, -133, -135, -137};
   std::vector<double> distances = {0, 0, 0, 0, 0, 0};
   for (double distance = 0; distance < 20000; distance++)
@@ -67,6 +73,7 @@ PrintCoverageRadius (Ptr<PropagationLossModel> lossModel)
       Ptr<MobilityModel> receiver = CreateObjectWithAttributes<ConstantPositionMobilityModel> ();
       receiver->SetPosition (Vector3D (distance, 0, 0));
       double rxPower = lossModel->CalcRxPower (27, sender, receiver);
+      myfile << distance << " " << rxPower << std::endl;
       for (int i = 0; i < 6; i++)
       {
         if (rxPower > sensitivities.at(i))
@@ -75,9 +82,9 @@ PrintCoverageRadius (Ptr<PropagationLossModel> lossModel)
         }
       }
     }
+  myfile.close();
 
   // Print distances to file
-  std::ofstream myfile;
   myfile.open ("ranges.txt");
   for (auto &distance : distances)
     {
@@ -194,6 +201,8 @@ main (int argc, char *argv[])
   cmd.AddValue ("nGateways", "Number of GWs to deploy", nGateways);
   cmd.AddValue ("nDevices", "Number of EDs to deploy", nDevices);
   cmd.AddValue ("radius", "Radius within which to deploy EDs", radius);
+  cmd.AddValue ("gwDeployment", "How to deploy the GWs inside the simulated area [random/grid]", gwDeployment);
+  cmd.AddValue ("dataRate", "Data Rate to employ to deliver the firmware update", dataRate);
   cmd.Parse (argc, argv);
 
   // Update the edFinished vector
@@ -203,8 +212,8 @@ main (int argc, char *argv[])
   ///////////////////////////////////
 
   Ptr<LogDistancePropagationLossModel> loss = CreateObject<LogDistancePropagationLossModel> ();
-  loss->SetPathLossExponent (3.76);
-  loss->SetReference (1, 7.7);
+  loss->SetPathLossExponent (3);
+  loss->SetReference (10, 100);
 
   Ptr<PropagationDelayModel> delay = CreateObject<ConstantSpeedPropagationDelayModel> ();
 
@@ -219,27 +228,52 @@ main (int argc, char *argv[])
   // End Device mobility
   //////////////////////
   MobilityHelper mobilityEd;
-  Ptr<UniformDiscPositionAllocator> positionAllocEd =
-      CreateObjectWithAttributes<UniformDiscPositionAllocator> (
-          "X", DoubleValue (0), "Y", DoubleValue (0), "Z", DoubleValue (0), "rho",
-          DoubleValue (radius));
+  Ptr<RandomBoxPositionAllocator> positionAllocEd =
+      CreateObjectWithAttributes<RandomBoxPositionAllocator> (
+        "X", PointerValue(CreateObjectWithAttributes<UniformRandomVariable>("Min", DoubleValue(-radius),
+                                                                            "Max", DoubleValue(radius))),
+        "Y", PointerValue(CreateObjectWithAttributes<UniformRandomVariable>("Min", DoubleValue(-radius),
+                                                                            "Max", DoubleValue(radius))),
+        "Z", PointerValue(CreateObjectWithAttributes<UniformRandomVariable>("Min", DoubleValue(0),
+                                                                            "Max", DoubleValue(0))));
+  // Ptr<UniformDiscPositionAllocator> positionAllocEd =
+  //     CreateObjectWithAttributes<UniformDiscPositionAllocator> (
+  //         "X", DoubleValue (0), "Y", DoubleValue (0), "Z", DoubleValue (0), "rho",
+  //         DoubleValue (radius));
   mobilityEd.SetPositionAllocator (positionAllocEd);
   // mobilityEd.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobilityEd.SetMobilityModel ("ns3::RandomWalk2dMobilityModel", "Bounds",
-                               RectangleValue (Rectangle (-radius, radius, -radius, radius)), "Time",
-                               TimeValue (Seconds (30)), "Distance", DoubleValue (10), "Speed",
+                               RectangleValue (Rectangle (-radius, radius, -radius, radius)),
+                               "Time", TimeValue (Seconds (30)), "Distance", DoubleValue (10),
+                               "Speed",
                                PointerValue (CreateObjectWithAttributes<UniformRandomVariable> (
                                    "Min", DoubleValue (2), "Max", DoubleValue (6))));
 
   // Gateway mobility
   ///////////////////
   MobilityHelper mobilityGw;
-  // TODO Use a better position allocator for GWs
-  // Using the Hex position allocator could be a good idea here
-  Ptr<UniformDiscPositionAllocator> positionAllocGw =
-      CreateObjectWithAttributes<UniformDiscPositionAllocator> (
+  Ptr<PositionAllocator> positionAllocGw;
+  if (gwDeployment == "random")
+    {
+      positionAllocGw = CreateObjectWithAttributes<UniformDiscPositionAllocator> (
           "X", DoubleValue (0), "Y", DoubleValue (0), "Z", DoubleValue (0), "rho",
           DoubleValue (radius));
+    }
+  else if (gwDeployment == "grid")
+    {
+      positionAllocGw = CreateObjectWithAttributes<GridPositionAllocator> (
+        "GridWidth", UintegerValue (std::sqrt(nGateways)),
+        "MinX", DoubleValue (-radius + (2*radius)/(std::sqrt(nGateways)+1)),
+        "MinY", DoubleValue (-radius + (2*radius)/(std::sqrt(nGateways)+1)),
+        "DeltaX", DoubleValue ((2*radius)/(std::sqrt(nGateways)+1)),
+        "DeltaY", DoubleValue ((2*radius)/(std::sqrt(nGateways)+1)),
+        "Z", DoubleValue (0));
+    }
+  else
+    {
+      NS_ABORT_MSG ("Gateway Deployment configuration not recognized: " << gwDeployment);
+    }
+
   mobilityGw.SetPositionAllocator (positionAllocGw);
   mobilityGw.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
@@ -269,6 +303,17 @@ main (int argc, char *argv[])
   macHelper.SetAddressGenerator (addrGen);
   macHelper.SetRegion (LorawanMacHelper::EU);
   NetDeviceContainer endDeviceNetDevices = helper.Install (phyHelper, macHelper, endDevices);
+
+  // Set the second receive window data rate on all EDs
+  for (int i = 0; i < nDevices; i++)
+    {
+      endDevices.Get (i)
+          ->GetDevice (0)
+          ->GetObject<LoraNetDevice> ()
+          ->GetMac ()
+          ->GetObject<ClassCEndDeviceLorawanMac> ()
+          ->SetSecondReceiveWindowDataRate (dataRate);
+    }
 
   // Install applications in EDs
 
@@ -320,7 +365,19 @@ main (int argc, char *argv[])
   FuotaSenderHelper fuotaSenderHelper = FuotaSenderHelper ();
   for (int gw = 0; gw < nGateways; gw++)
     {
-      fuotaSenderHelper.SetSendTime (Seconds (100 + 2 * gw));
+      fuotaSenderHelper.SetAttribute ("DataRate", UintegerValue (dataRate));
+      // Scatter send times baesed on the duration of a single update packet
+      LoraTxParameters txParams;
+      txParams.sf = gateways.Get(0)->GetDevice(0)->GetObject<LoraNetDevice> ()->GetMac()->GetSfFromDataRate (dataRate);
+      txParams.headerDisabled = 0;
+      txParams.codingRate = 1;
+      txParams.bandwidthHz = 125e3;
+      txParams.nPreamble = 8;
+      txParams.crcEnabled = 1;
+      txParams.lowDataRateOptimizationEnabled = 0;
+      Time packetDuration = LoraPhy::GetOnAirTime (Create<Packet> (10), txParams);
+      // packetDuration = Seconds(2);
+      fuotaSenderHelper.SetSendTime (Seconds (100) + packetDuration * gw + MilliSeconds(10));
       fuotaSenderHelper.SetDeviceIdAndAddress (nwkId, nwkAddr);
       fuotaSenderHelper.SetNumberOfPacketsToSend (100000); // XXX Never stop sending data
       fuotaSenderHelper.Install (gateways.Get (gw));
@@ -375,10 +432,6 @@ main (int argc, char *argv[])
   FileHelper fileHelper;
   fileHelper.ConfigureFile ("battery-level", FileAggregator::SPACE_SEPARATED);
   fileHelper.WriteProbe ("ns3::DoubleProbe", "/Names/EnergySource/RemainingEnergy", "Output");
-
-  // Install the Forwarder application on the gateways
-  // ForwarderHelper forwarderHelper;
-  // forwarderHelper.Install (gateways);
 
   // Start simulation
   Simulator::Stop (Hours (10));
