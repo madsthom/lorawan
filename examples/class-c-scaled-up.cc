@@ -43,6 +43,9 @@ Ptr<FileAggregator> receivedBytesAggregator =
 Ptr<FileAggregator> edStateAggregator =
     CreateObject<FileAggregator> ("EDStates", FileAggregator::FORMATTED);
 
+Ptr<FileAggregator> rxPowerAggregator =
+    CreateObject<FileAggregator> ("RxPowers", FileAggregator::FORMATTED);
+
 Ptr<FileAggregator> updateDownloadCompleteAggregator =
     CreateObject<FileAggregator> ("UpdateDownloadComplete", FileAggregator::FORMATTED);
 
@@ -122,6 +125,9 @@ OnReceivedPacket (Ptr<Packet const> packet)
   }
 
   Ptr<Packet> packetCopy = packet->Copy ();
+  LoraTag tag;
+  packetCopy->RemovePacketTag (tag);
+  double rxPower = tag.GetReceivePower();
   LorawanMacHeader mHdr;
   mHdr.SetMType (LorawanMacHeader::UNCONFIRMED_DATA_DOWN);
   LoraFrameHeader fHdr;
@@ -133,6 +139,10 @@ OnReceivedPacket (Ptr<Packet const> packet)
   receivedBytesAggregator->Write3d (std::to_string (Simulator::GetContext ()),
                                     Simulator::Now ().GetNanoSeconds (), Simulator::GetContext (),
                                     packetCopy->GetSize ());
+
+  rxPowerAggregator->Write3d(std::to_string (Simulator::GetContext ()),
+                                    Simulator::Now ().GetNanoSeconds (), Simulator::GetContext (),
+                                    rxPower);
 }
 
 void
@@ -331,6 +341,8 @@ main (int argc, char *argv[])
   // Create an aggregator that will have formatted values.
   edStateAggregator->Enable ();
   receivedBytesAggregator->Enable ();
+  updateDownloadCompleteAggregator->Enable ();
+  rxPowerAggregator->Enable ();
 
   /************************
    * Install Energy Model *
@@ -369,7 +381,7 @@ main (int argc, char *argv[])
   // forwarderHelper.Install (gateways);
 
   // Start simulation
-  Simulator::Stop (Hours (40));
+  Simulator::Stop (Hours (10));
   Simulator::Run ();
   Simulator::Destroy ();
 
